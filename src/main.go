@@ -86,9 +86,15 @@ type HeartbeatQueryOption struct {
 
 func main() {
 	openServer("test")
+	heartbeat()
 	register("5205")
+	heartbeat()
+	heartbeat()
 	login("test02", "5205", "SSG_DEV")
+	heartbeat()
+	heartbeat()
 	setReady("SSG_DEV", "test02")
+	heartbeat()
 	heartbeatMaker(HBPeriod)
 
 }
@@ -121,14 +127,11 @@ func openServer(AppName string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("openServer", resJson)
+	fmt.Println("openServer\t", string(data))
 
 	// session 및 handle 값 저장
 	session = resJson.Key
 	handle = resJson.Handle
-
-	// heartbeat 호출
-	heartbeat()
 
 }
 
@@ -165,11 +168,9 @@ func register(DN string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("register", string(data))
+	fmt.Println("register\t", string(data))
 
 	// fmt.Println(url)
-	// heartbeat 호출
-	heartbeat()
 
 }
 
@@ -224,12 +225,9 @@ func login(agnetID string, DN string, tenant string) {
 		panic(err)
 	}
 
-	fmt.Println("login", string(data))
+	fmt.Println("login\t", string(data))
 
 	// fmt.Println(url)
-
-	// heartbeat 호출
-	heartbeat()
 
 }
 
@@ -278,13 +276,9 @@ func setReady(tenant string, agentID string) {
 		panic(err)
 	}
 
-	fmt.Println("setReady", string(data))
+	fmt.Println("setReady\t", string(data))
 
 	// fmt.Println(url)
-
-	// heartbeat 호출
-	heartbeat()
-
 }
 
 func heartbeat() {
@@ -309,7 +303,21 @@ func heartbeat() {
 		panic(err)
 	}
 
-	fmt.Println("heartbeat", string(data))
+	var objmap map[string]interface{}
+	if err = json.Unmarshal(data, &objmap); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("heartbeat\t", string(data))
+
+	// heartbeat에서 agentState != 40이 감지될 경우
+	// fmt.Println("agentState:", objmap["agentstate"])
+	// fmt.Println("agentState:", reflect.TypeOf(objmap["agentstate"]))
+	if objmap["agentstate"] != nil {
+		if int(objmap["agentstate"].(float64)) != 40 {
+			setReady("SSG_DEV", "test02")
+		}
+	}
 }
 
 func heartbeatMaker(period int) {
@@ -318,6 +326,7 @@ func heartbeatMaker(period int) {
 
 	// 4
 	c.Every(period).Seconds().Do(func() {
+		heartbeat()
 		heartbeat()
 	})
 
