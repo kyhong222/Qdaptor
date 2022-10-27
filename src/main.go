@@ -84,6 +84,15 @@ type SetAgentStateQueryOption struct {
 	AgentStateSub string `url:"agentstatesub"`
 	MediaSet      string `url:"mediaset"`
 }
+type SetAfterCallReadyQueryOption struct {
+	Key           string `url:"key"`
+	Handle        int    `url:"handle"`
+	Tenant        string `url:"tenantname"`
+	AgentID       string `url:"agentid"`
+	AgentState    string `url:"agentstate"`
+	AgentStateSub string `url:"agentstatesub"`
+	MediaSet      string `url:"mediaset"`
+}
 
 type HeartbeatQueryOption struct {
 	Key string `url:"key"`
@@ -98,7 +107,8 @@ func main() {
 	login(g_agentID, g_DN, g_tenant)
 	heartbeat()
 	heartbeat()
-	setReady(g_tenant, g_agentID)
+	// setReady(g_tenant, g_agentID)
+	setAfterCallReady(g_tenant, g_agentID)
 	heartbeat()
 	heartbeatMaker(HBPeriod)
 
@@ -293,6 +303,56 @@ func setReady(tenant string, agentID string) {
 	// fmt.Println(url)
 }
 
+func setAfterCallReady(tenant string, agentID string) {
+	option := SetAfterCallReadyQueryOption{
+		session,
+		handle,
+		tenant,
+		agentID,
+		"40", // 40 is ready
+		"0",  // state sub is 0
+		"",   // mediaset is blank
+	}
+
+	v, _ := query.Values(option)
+
+	url := baseURL + "/setaftcallstate?" + v.Encode()
+
+	// login 호출
+	reqBody := bytes.NewBufferString("") // body가 필요없으나, 파라미터라 선언.
+	resp, err := http.Post(url, "application/json", reqBody)
+	if err != nil {
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
+		setAfterCallReady(tenant, agentID)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	// 결과 데이터를 res에 저장
+	resJson := RegisterMsg{}
+	data, err := ioutil.ReadAll(resp.Body) // data는 bytep[]
+	if err != nil {
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
+		setAfterCallReady(tenant, agentID)
+		return
+	}
+
+	err = json.Unmarshal(data, &resJson)
+	if err != nil {
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
+		setAfterCallReady(tenant, agentID)
+		return
+	}
+
+	fmt.Println("setAfterCallReady>>\t", string(data))
+
+	// fmt.Println(url)
+}
+
 func heartbeat() {
 	option := HeartbeatQueryOption{
 		session,
@@ -331,14 +391,15 @@ func heartbeat() {
 
 	fmt.Println("heartbeat>>\t", string(data))
 
-	// heartbeat에서 agentState != 40이 감지될 경우
-	// fmt.Println("agentState:", objmap["agentstate"])
-	// fmt.Println("agentState:", reflect.TypeOf(objmap["agentstate"]))
-	if objmap["agentstate"] != nil {
-		if int(objmap["agentstate"].(float64)) != 40 {
-			setReady("SSG_DEV", "test02")
-		}
-	}
+	// setReady 비활성화, setAfterCallReady로 대체됨.
+	// // heartbeat에서 agentState != 40이 감지될 경우
+	// // fmt.Println("agentState:", objmap["agentstate"])
+	// // fmt.Println("agentState:", reflect.TypeOf(objmap["agentstate"]))
+	// if objmap["agentstate"] != nil {
+	// 	if int(objmap["agentstate"].(float64)) != 40 {
+	// 		setReady("SSG_DEV", "test02")
+	// 	}
+	// }
 }
 
 func heartbeatMaker(period int) {
