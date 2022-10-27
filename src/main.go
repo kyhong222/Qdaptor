@@ -17,6 +17,11 @@ const baseURL string = "https://dev-icweb.ssgadm.com:9203/ic"
 var session string
 var handle int
 
+const g_DN string = "5205"
+const g_tenant string = "SSG_DEV"
+const g_agentID string = "test04"
+const g_appName string = "SSGVoicebot"
+
 const HBPeriod int = 10 // heartbeat period
 const HBErrCnt int = 18 // heartbeat error count
 
@@ -85,15 +90,15 @@ type HeartbeatQueryOption struct {
 }
 
 func main() {
-	openServer("test")
+	openServer(g_appName)
 	heartbeat()
-	register("5205")
-	heartbeat()
-	heartbeat()
-	login("test02", "5205", "SSG_DEV")
+	register(g_DN)
 	heartbeat()
 	heartbeat()
-	setReady("SSG_DEV", "test02")
+	login(g_agentID, g_DN, g_tenant)
+	heartbeat()
+	heartbeat()
+	setReady(g_tenant, g_agentID)
 	heartbeat()
 	heartbeatMaker(HBPeriod)
 
@@ -111,7 +116,10 @@ func openServer(AppName string) {
 	// openServer 호출
 	resp, err := http.Get(url)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
+		register(AppName)
+		return
 	}
 
 	defer resp.Body.Close()
@@ -120,12 +128,18 @@ func openServer(AppName string) {
 	resJson := OpenServerMsg{}
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
+		register(AppName)
+		return
 	}
 
 	err = json.Unmarshal(data, &resJson)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
+		register(AppName)
+		return
 	}
 	fmt.Println("openServer\t", string(data))
 
@@ -136,9 +150,6 @@ func openServer(AppName string) {
 }
 
 func register(DN string) {
-	// temp
-	// session = "abcd"
-
 	tenantName := "SSG_DEV"
 	option := RegisterQueryOption{
 		session, handle, DN, tenantName,
@@ -152,40 +163,35 @@ func register(DN string) {
 	reqBody := bytes.NewBufferString("") // body가 필요없으나, 파라미터라 선언.
 	resp, err := http.Post(url, "application/json", reqBody)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
+		register(DN)
+		return
 	}
 
 	defer resp.Body.Close()
 
 	// 결과 데이터를 res에 저장
 	resJson := RegisterMsg{}
-	data, err := ioutil.ReadAll(resp.Body) // data는 bytep[]
+	data, err := ioutil.ReadAll(resp.Body) // data는 byte[]
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
+		register(DN)
+		return
 	}
 
 	err = json.Unmarshal(data, &resJson)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
+		register(DN)
+		return
 	}
-	fmt.Println("register\t", string(data))
-
-	// fmt.Println(url)
-
+	fmt.Println("register>>\t", string(data))
 }
 
 func login(agnetID string, DN string, tenant string) {
-	// agentlogin?
-	// key=FB23846E-4B42-4003-9B4B-79606049E7A6
-	// &handle=1316
-	// &tenantname=SSG_DEV
-	// &agentdn=5205
-	// &agentid=test01
-	// &agentpassword=
-	// &agentstate=40
-	// &agentstatesub=0
-	// &passwdtype=4
-	// &mediaset=
 
 	option := LoginQueryOption{
 		session,
@@ -208,39 +214,36 @@ func login(agnetID string, DN string, tenant string) {
 	reqBody := bytes.NewBufferString("") // body가 필요없으나, 파라미터라 선언.
 	resp, err := http.Post(url, "application/json", reqBody)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
+		login(agnetID, DN, tenant)
+		return
 	}
 
 	defer resp.Body.Close()
 
 	// 결과 데이터를 res에 저장
 	resJson := RegisterMsg{}
-	data, err := ioutil.ReadAll(resp.Body) // data는 bytep[]
+	data, err := ioutil.ReadAll(resp.Body) // data는 bytep[]]
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
+		login(agnetID, DN, tenant)
+		return
 	}
 
 	err = json.Unmarshal(data, &resJson)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
+		login(agnetID, DN, tenant)
+		return
 	}
 
-	fmt.Println("login\t", string(data))
-
-	// fmt.Println(url)
-
+	fmt.Println("login>>\t", string(data))
 }
 
 func setReady(tenant string, agentID string) {
-	// setagentstate
-	// ?key=252AAF78-4F24-44B7-87E2-E345BEE32418
-	// &handle=1347
-	// &tenantname=SSG_DEV
-	// &agentid=test02
-	// &agentstate=40
-	// &agentstatesub=0
-	// &mediaset=
-
 	option := SetAgentStateQueryOption{
 		session,
 		handle,
@@ -259,7 +262,10 @@ func setReady(tenant string, agentID string) {
 	reqBody := bytes.NewBufferString("") // body가 필요없으나, 파라미터라 선언.
 	resp, err := http.Post(url, "application/json", reqBody)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
+		setReady(tenant, agentID)
+		return
 	}
 
 	defer resp.Body.Close()
@@ -268,15 +274,21 @@ func setReady(tenant string, agentID string) {
 	resJson := RegisterMsg{}
 	data, err := ioutil.ReadAll(resp.Body) // data는 bytep[]
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
+		setReady(tenant, agentID)
+		return
 	}
 
 	err = json.Unmarshal(data, &resJson)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
+		setReady(tenant, agentID)
+		return
 	}
 
-	fmt.Println("setReady\t", string(data))
+	fmt.Println("setReady>>\t", string(data))
 
 	// fmt.Println(url)
 }
@@ -293,22 +305,31 @@ func heartbeat() {
 	// heartbeat 호출
 	resp, err := http.Get(url)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
+		heartbeat()
+		return
 	}
 
 	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body) // data는 byte[]
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
+		heartbeat()
+		return
 	}
 
 	var objmap map[string]interface{}
 	if err = json.Unmarshal(data, &objmap); err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
+		heartbeat()
+		return
 	}
 
-	fmt.Println("heartbeat\t", string(data))
+	fmt.Println("heartbeat>>\t", string(data))
 
 	// heartbeat에서 agentState != 40이 감지될 경우
 	// fmt.Println("agentState:", objmap["agentstate"])
