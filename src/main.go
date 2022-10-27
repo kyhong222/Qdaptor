@@ -107,7 +107,7 @@ func main() {
 	login(g_agentID, g_DN, g_tenant)
 	heartbeat()
 	heartbeat()
-	// setReady(g_tenant, g_agentID)
+	setReady(g_tenant, g_agentID)
 	setAfterCallReady(g_tenant, g_agentID)
 	heartbeat()
 	heartbeatMaker(HBPeriod)
