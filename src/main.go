@@ -100,16 +100,27 @@ type HeartbeatQueryOption struct {
 
 func main() {
 	openServer(g_appName)
+	time.Sleep(1 * time.Second)
 	heartbeat()
+	time.Sleep(1 * time.Second)
 	register(g_DN)
+	time.Sleep(1 * time.Second)
 	heartbeat()
+	time.Sleep(1 * time.Second)
 	heartbeat()
+	time.Sleep(1 * time.Second)
 	login(g_agentID, g_DN, g_tenant)
+	time.Sleep(1 * time.Second)
 	heartbeat()
+	time.Sleep(1 * time.Second)
 	heartbeat()
+	time.Sleep(1 * time.Second)
 	setReady(g_tenant, g_agentID)
+	time.Sleep(1 * time.Second)
 	setAfterCallReady(g_tenant, g_agentID)
+	time.Sleep(1 * time.Second)
 	heartbeat()
+	time.Sleep(1 * time.Second)
 	heartbeatMaker(HBPeriod)
 
 }
@@ -365,9 +376,8 @@ func heartbeat() {
 	// heartbeat 호출
 	resp, err := http.Get(url)
 	if err != nil {
-		// panic(err)
 		fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
-		heartbeat()
+		fmt.Println(err)
 		return
 	}
 
@@ -375,17 +385,15 @@ func heartbeat() {
 
 	data, err := ioutil.ReadAll(resp.Body) // data는 byte[]
 	if err != nil {
-		// panic(err)
 		fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
-		heartbeat()
+		fmt.Println(err)
 		return
 	}
 
 	var objmap map[string]interface{}
 	if err = json.Unmarshal(data, &objmap); err != nil {
-		// panic(err)
 		fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
-		heartbeat()
+		fmt.Println(err)
 		return
 	}
 
