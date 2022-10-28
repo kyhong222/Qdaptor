@@ -417,7 +417,7 @@ func heartbeatMaker(period int) {
 	// 4
 	c.Every(period).Seconds().Do(func() {
 		heartbeat()
-		heartbeat()
+		// heartbeat()
 	})
 
 	// 5
