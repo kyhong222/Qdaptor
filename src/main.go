@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	Q "Qdaptor/Qdaptor_grpc"
+
 	"github.com/go-co-op/gocron"
 	"github.com/google/go-querystring/query"
 )
@@ -99,6 +101,9 @@ type HeartbeatQueryOption struct {
 }
 
 func main() {
+	go func() {
+		Q.Init()
+	}()
 	openServer(g_appName)
 	time.Sleep(1 * time.Second)
 	heartbeat()

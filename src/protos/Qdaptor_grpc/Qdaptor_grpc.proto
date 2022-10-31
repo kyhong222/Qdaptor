@@ -1,0 +1,17 @@
+// proto file compile
+// protoc -I ./protos/Qdaptor_grpc ./protos/Qdaptor_grpc/Qdaptor_grpc.proto --go_out=./protos --go-grpc_out=./protos
+
+syntax = "proto3";
+
+package Qdaptor_grpc;
+option go_package = "./Qdaptor_grpc";
+
+service Transaction {
+  rpc HelloTransaction (TransactionMessage) returns (TransactionMessage){}
+  rpc RefCallTransaction(TransactionMessage) returns (TransactionMessage){}
+}
+
+message TransactionMessage {
+  string callId = 1;
+  string message = 2;
+}
