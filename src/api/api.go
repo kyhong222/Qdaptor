@@ -1,12 +1,14 @@
 package api
 
 import (
+	"Qdaptor/logger"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/go-co-op/gocron"
 	"github.com/google/go-querystring/query"
@@ -110,7 +112,8 @@ func OpenServer(AppName string) {
 	resp, err := http.Get(url)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
+		logger.Error("Session disconnected, retry openServer() to connect")
 		OpenServer(AppName)
 		return
 	}
@@ -122,7 +125,8 @@ func OpenServer(AppName string) {
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
+		logger.Error("Session disconnected, retry openServer() to connect")
 		OpenServer(AppName)
 		return
 	}
@@ -130,11 +134,15 @@ func OpenServer(AppName string) {
 	err = json.Unmarshal(data, &resJson)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
+		logger.Error("Session disconnected, retry openServer() to connect")
 		OpenServer(AppName)
 		return
 	}
-	fmt.Println("openServer\t", string(data))
+	// fmt.Println("openServer\t", string(data))
+	logger.Info("OpenServer",
+		zap.Reflect("data", data),
+	)
 
 	// session 및 handle 값 저장
 	APIVars.Session = resJson.Key
@@ -157,7 +165,8 @@ func Register(DN string) {
 	resp, err := http.Post(url, "application/json", reqBody)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
+		logger.Error("Session disconnected, retry register() to connect")
 		Register(DN)
 		return
 	}
@@ -169,7 +178,8 @@ func Register(DN string) {
 	data, err := ioutil.ReadAll(resp.Body) // data는 byte[]
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
+		logger.Error("Session disconnected, retry register() to connect")
 		Register(DN)
 		return
 	}
@@ -177,11 +187,16 @@ func Register(DN string) {
 	err = json.Unmarshal(data, &resJson)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
+		logger.Error("Session disconnected, retry register() to connect")
 		Register(DN)
 		return
 	}
-	fmt.Println("register>>\t", string(data))
+	// fmt.Println("register>>\t", string(data))
+	logger.Info("Register",
+		zap.Reflect("data", data),
+	)
+
 }
 
 func Login(agnetID string, DN string, tenant string) {
@@ -208,7 +223,8 @@ func Login(agnetID string, DN string, tenant string) {
 	resp, err := http.Post(url, "application/json", reqBody)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
+		logger.Error("Session disconnected, retry login() to connect")
 		Login(agnetID, DN, tenant)
 		return
 	}
@@ -220,7 +236,8 @@ func Login(agnetID string, DN string, tenant string) {
 	data, err := ioutil.ReadAll(resp.Body) // data는 bytep[]]
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
+		logger.Error("Session disconnected, retry login() to connect")
 		Login(agnetID, DN, tenant)
 		return
 	}
@@ -228,12 +245,16 @@ func Login(agnetID string, DN string, tenant string) {
 	err = json.Unmarshal(data, &resJson)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
+		logger.Error("Session disconnected, retry login() to connect")
 		Login(agnetID, DN, tenant)
 		return
 	}
 
-	fmt.Println("login>>\t", string(data))
+	// fmt.Println("login>>\t", string(data))
+	logger.Info("Login",
+		zap.Reflect("data", data),
+	)
 }
 
 func SetReady(tenant string, agentID string) {
@@ -256,7 +277,8 @@ func SetReady(tenant string, agentID string) {
 	resp, err := http.Post(url, "application/json", reqBody)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
+		logger.Error("Session disconnected, retry setReady() to connect")
 		SetReady(tenant, agentID)
 		return
 	}
@@ -268,7 +290,8 @@ func SetReady(tenant string, agentID string) {
 	data, err := ioutil.ReadAll(resp.Body) // data는 bytep[]
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
+		logger.Error("Session disconnected, retry setReady() to connect")
 		SetReady(tenant, agentID)
 		return
 	}
@@ -276,12 +299,16 @@ func SetReady(tenant string, agentID string) {
 	err = json.Unmarshal(data, &resJson)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
+		logger.Error("Session disconnected, retry setReady() to connect")
 		SetReady(tenant, agentID)
 		return
 	}
 
-	fmt.Println("setReady>>\t", string(data))
+	// fmt.Println("setReady>>\t", string(data))
+	logger.Info("SetReady",
+		zap.Reflect("data", data),
+	)
 
 	// fmt.Println(url)
 }
@@ -306,7 +333,8 @@ func SetAfterCallReady(tenant string, agentID string) {
 	resp, err := http.Post(url, "application/json", reqBody)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
+		logger.Error("Session disconnected, retry setAfterCallReady() to connect")
 		SetAfterCallReady(tenant, agentID)
 		return
 	}
@@ -318,7 +346,8 @@ func SetAfterCallReady(tenant string, agentID string) {
 	data, err := ioutil.ReadAll(resp.Body) // data는 bytep[]
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
+		logger.Error("Session disconnected, retry setAfterCallReady() to connect")
 		SetAfterCallReady(tenant, agentID)
 		return
 	}
@@ -326,13 +355,16 @@ func SetAfterCallReady(tenant string, agentID string) {
 	err = json.Unmarshal(data, &resJson)
 	if err != nil {
 		// panic(err)
-		fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
+		// fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
+		logger.Error("Session disconnected, retry setAfterCallReady() to connect")
 		SetAfterCallReady(tenant, agentID)
 		return
 	}
 
-	fmt.Println("setAfterCallReady>>\t", string(data))
-
+	// fmt.Println("setAfterCallReady>>\t", string(data))
+	logger.Info("SetAfterCallReady",
+		zap.Reflect("data", data),
+	)
 	// fmt.Println(url)
 }
 
@@ -348,9 +380,13 @@ func Heartbeat() {
 	// heartbeat 호출
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
-		fmt.Println(err)
+		// fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
+		// fmt.Println(err)
 		ErrorCount++
+		logger.Error("Session disconnected, retry heartbeat() to connect",
+			zap.Error(err),
+			zap.Int("ErrorCount", ErrorCount),
+		)
 		return
 	}
 
@@ -358,21 +394,32 @@ func Heartbeat() {
 
 	data, err := ioutil.ReadAll(resp.Body) // data는 byte[]
 	if err != nil {
-		fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
-		fmt.Println(err)
+		// fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
+		// fmt.Println(err)
 		ErrorCount++
+		logger.Error("Session disconnected, retry heartbeat() to connect",
+			zap.Error(err),
+			zap.Int("ErrorCount", ErrorCount),
+		)
 		return
 	}
 
 	var objmap map[string]interface{}
 	if err = json.Unmarshal(data, &objmap); err != nil {
-		fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
-		fmt.Println(err)
+		// fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
+		// fmt.Println(err)
 		ErrorCount++
+		logger.Error("Session disconnected, retry heartbeat() to connect",
+			zap.Error(err),
+			zap.Int("ErrorCount", ErrorCount),
+		)
 		return
 	}
 
-	fmt.Println("heartbeat>>\t", string(data))
+	// fmt.Println("heartbeat>>\t", string(data))
+	logger.Info("HeartBeat",
+		zap.Reflect("data", data),
+	)
 
 	// setReady 비활성화, setAfterCallReady로 대체됨.
 	// // heartbeat에서 agentState != 40이 감지될 경우
