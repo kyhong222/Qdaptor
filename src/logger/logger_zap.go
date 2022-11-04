@@ -31,7 +31,9 @@ func init() {
 }
 
 func Info(message string, fields ...zap.Field) {
-	log.Info(message, fields...)
+	log.With(
+		zap.Namespace("data"),
+	).Info(message, fields...)
 }
 
 func Debug(message string, fields ...zap.Field) {
