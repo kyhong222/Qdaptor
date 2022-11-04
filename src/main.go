@@ -19,11 +19,11 @@ func main() {
 	go func() {
 		Q.Init()
 	}()
-	// api.Init(baseURL, HBPeriod, HBErrCnt, g_appName, g_DN, g_tenant, g_agentID)
+	// api.Start(baseURL, HBPeriod, HBErrCnt, g_appName, g_DN, g_tenant, g_agentID)
 	for {
 		if api.ErrorCount >= HBErrCnt {
 			api.ErrorCount = 0
-			api.Init(baseURL, HBPeriod, HBErrCnt, g_appName, g_DN, g_tenant, g_agentID)
+			api.Start(baseURL, HBPeriod, HBErrCnt, g_appName, g_DN, g_tenant, g_agentID)
 		}
 	}
 }

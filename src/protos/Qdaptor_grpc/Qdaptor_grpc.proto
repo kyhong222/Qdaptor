@@ -9,6 +9,7 @@ option go_package = "./Qdaptor_grpc";
 service Transaction {
   rpc HelloTransaction (TransactionMessage) returns (TransactionMessage){}
   rpc RefCallTransaction(TransactionMessage) returns (TransactionMessage){}
+  rpc CallClearTransaction(TransactionMessage) returns (TransactionMessage){}
 }
 
 message TransactionMessage {

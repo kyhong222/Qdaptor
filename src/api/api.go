@@ -18,13 +18,17 @@ type ApiVariables struct {
 	BaseURL string
 	Session string
 	Handle  int
+	ThisDN  string
 
 	HBPeriod int
 	HBErrCnt int
+
+	ConnectionID string
 }
 
 var APIVars ApiVariables
 var ErrorCount int = 18 // 처음 실행하기 위해 에러카운트를 18로 시작
+var IVRResultResponse map[string]interface{} = nil
 
 type OpenServerMsg struct {
 	MessageType int    `json:"messagetype"`
@@ -99,6 +103,27 @@ type HeartbeatQueryOption struct {
 	Key string `url:"key"`
 }
 
+type RefCallQueryOption struct {
+	Key           string `url:"key"`
+	Handle        int    `url:"handle"`
+	ThisDN        string `url:"thisdn"`
+	DestDN        string `url:"destdn"`
+	ObCallingDN   string `url:"obcallingdn"`
+	ConnectionID  string `url:"connectionid"`
+	PartyType     int    `url:"partytype"`
+	MediaType     int    `url:"mediatype"`
+	ExtensionData string `url:"extensiondata"`
+}
+
+type CallClearQueryOption struct {
+	Key           string `url:"key"`
+	Handle        int    `url:"handle"`
+	ThisDN        string `url:"thisdn"`
+	ConnectionID  string `url:"connectionid"`
+	MediaType     int    `url:"mediatype"`
+	ExtensionData string `url:"extensiondata"`
+}
+
 func OpenServer(AppName string) {
 	option := OpenServerQueryOption{
 		AppName,
@@ -141,7 +166,7 @@ func OpenServer(AppName string) {
 	}
 	// fmt.Println("openServer\t", string(data))
 	logger.Info("OpenServer",
-		zap.Reflect("data", data),
+		zap.Reflect("response", resJson),
 	)
 
 	// session 및 handle 값 저장
@@ -152,6 +177,7 @@ func OpenServer(AppName string) {
 
 func Register(DN string) {
 	tenantName := "SSG_DEV"
+	APIVars.ThisDN = DN
 	option := RegisterQueryOption{
 		APIVars.Session, APIVars.Handle, DN, tenantName,
 	}
@@ -194,7 +220,7 @@ func Register(DN string) {
 	}
 	// fmt.Println("register>>\t", string(data))
 	logger.Info("Register",
-		zap.Reflect("data", data),
+		zap.Reflect("response", resJson),
 	)
 
 }
@@ -253,7 +279,7 @@ func Login(agnetID string, DN string, tenant string) {
 
 	// fmt.Println("login>>\t", string(data))
 	logger.Info("Login",
-		zap.Reflect("data", data),
+		zap.Reflect("response", resJson),
 	)
 }
 
@@ -307,7 +333,7 @@ func SetReady(tenant string, agentID string) {
 
 	// fmt.Println("setReady>>\t", string(data))
 	logger.Info("SetReady",
-		zap.Reflect("data", data),
+		zap.Reflect("response", resJson),
 	)
 
 	// fmt.Println(url)
@@ -363,7 +389,7 @@ func SetAfterCallReady(tenant string, agentID string) {
 
 	// fmt.Println("setAfterCallReady>>\t", string(data))
 	logger.Info("SetAfterCallReady",
-		zap.Reflect("data", data),
+		zap.Reflect("response", resJson),
 	)
 	// fmt.Println(url)
 }
@@ -418,8 +444,20 @@ func Heartbeat() {
 
 	// fmt.Println("heartbeat>>\t", string(data))
 	logger.Info("HeartBeat",
-		zap.Reflect("data", data),
+		zap.Reflect("response", objmap),
 	)
+
+	// get connectionID
+	// messagetype: 3 is IVR event
+	if (objmap["messagetype"].(float64) == 3) && (objmap["connectionid"] != nil) && (objmap["connectionid"].(string) != "") {
+		APIVars.ConnectionID = objmap["connectionid"].(string)
+	}
+
+	// get IVR Result
+	// messagetype: 3 is IVR event, method: 2010 is party delete(means IVR is ended)
+	if (objmap["messagetype"].(float64) == 3) && (objmap["method"].(float64) == 2010) {
+		IVRResultResponse = objmap
+	}
 
 	// setReady 비활성화, setAfterCallReady로 대체됨.
 	// // heartbeat에서 agentState != 40이 감지될 경우
@@ -447,7 +485,123 @@ func HeartbeatMaker(period int) {
 
 }
 
-func Init(url string, HBP int, HBC int, appName string, DN string, tenant string, agentID string) {
+func RefCall(DN string) {
+	// key: EC8ACECF-5F92-4BEB-B93F-32896C2F0450
+	// handle: 974
+	// thisdn: 5205
+	// destdn: 8993
+	// obcallingdn:
+	// connectionid: 6bab040d03a410
+	// partytype: 4
+	// mediatype: 0
+	// extensiondata: {"NANSAGTID":["2022002106"]}
+
+	option := RefCallQueryOption{
+		APIVars.Session,
+		APIVars.Handle,
+		APIVars.ThisDN,
+		DN,
+		"",
+		APIVars.ConnectionID,
+		4, // 4 is Mute
+		0,
+		"", // 브리지텍 측에서 NANSAGTID 필요없다 하심.
+	}
+
+	v, _ := query.Values(option)
+
+	url := APIVars.BaseURL + "/singlesteptransfer?" + v.Encode()
+
+	// singlesteptransfer 호출
+	resp, err := http.Get(url)
+	if err != nil {
+		logger.Error("singleStepTransfer failed",
+			zap.Error(err),
+		)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body) // data는 byte[]
+	if err != nil {
+		logger.Error("singleStepTranfer response read failed",
+			zap.Error(err),
+		)
+		return
+	}
+
+	var objmap map[string]interface{}
+	if err = json.Unmarshal(data, &objmap); err != nil {
+		logger.Error("singleStepTranfer response Unmarshal failed ",
+			zap.Error(err),
+		)
+		return
+	}
+
+	// fmt.Println("heartbeat>>\t", string(data))
+	logger.Info("singleStepTranfer",
+		zap.Reflect("response", objmap),
+	)
+}
+
+func CallClear() {
+	// key: 78D6FD84-F167-42CE-A717-67268F5F6530
+	// handle: 44
+	// thisdn: 5205
+	// connectionid:
+	// mediatype: 0
+	// extensiondata
+
+	// TODO: make extensionData
+
+	option := CallClearQueryOption{
+		APIVars.Session,
+		APIVars.Handle,
+		APIVars.ThisDN,
+		APIVars.ConnectionID,
+		0,
+		"",
+	}
+
+	v, _ := query.Values(option)
+
+	url := APIVars.BaseURL + "/clearcall?" + v.Encode()
+
+	// callClear 호출
+	resp, err := http.Get(url)
+	if err != nil {
+		logger.Error("callClear failed",
+			zap.Error(err),
+		)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body) // data는 byte[]
+	if err != nil {
+		logger.Error("callClear response read failed",
+			zap.Error(err),
+		)
+		return
+	}
+
+	var objmap map[string]interface{}
+	if err = json.Unmarshal(data, &objmap); err != nil {
+		logger.Error("callClear response Unmarshal failed ",
+			zap.Error(err),
+		)
+		return
+	}
+
+	// fmt.Println("heartbeat>>\t", string(data))
+	logger.Info("callClear",
+		zap.Reflect("response", objmap),
+	)
+}
+
+func Start(url string, HBP int, HBC int, appName string, DN string, tenant string, agentID string) {
 	APIVars.BaseURL = url
 	APIVars.HBPeriod = HBP
 	APIVars.HBErrCnt = HBC
