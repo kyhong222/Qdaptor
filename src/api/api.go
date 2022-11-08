@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -24,11 +25,14 @@ type ApiVariables struct {
 	HBErrCnt int
 
 	ConnectionID string
+	UCID         string
 }
 
 var APIVars ApiVariables
 var ErrorCount int = 18 // 처음 실행하기 위해 에러카운트를 18로 시작
 var IVRResultResponse map[string]interface{} = nil
+
+var APIWaitGroup = sync.WaitGroup{}
 
 type OpenServerMsg struct {
 	MessageType int    `json:"messagetype"`
@@ -447,16 +451,18 @@ func Heartbeat() {
 		zap.Reflect("response", objmap),
 	)
 
-	// get connectionID
 	// messagetype: 3 is IVR event
-	if (objmap["messagetype"].(float64) == 3) && (objmap["connectionid"] != nil) && (objmap["connectionid"].(string) != "") {
-		APIVars.ConnectionID = objmap["connectionid"].(string)
-	}
-
-	// get IVR Result
-	// messagetype: 3 is IVR event, method: 2010 is party delete(means IVR is ended)
-	if (objmap["messagetype"].(float64) == 3) && (objmap["method"].(float64) == 2010) {
-		IVRResultResponse = objmap
+	if objmap["messagetype"].(float64) == 3 {
+		switch objmap["method"].(float64) {
+		case 2000: //  method: 2000 is ringing
+			// get connectionID & UCID
+			APIVars.ConnectionID = objmap["connectionid"].(string)
+			APIVars.UCID = objmap["ucid"].(string)
+		case 2010: //  method: 2010 is party delete(means IVR is ended)
+			// get full IVR Response
+			IVRResultResponse = objmap
+		}
+		APIWaitGroup.Done()
 	}
 
 	// setReady 비활성화, setAfterCallReady로 대체됨.
@@ -545,7 +551,7 @@ func RefCall(DN string) {
 	)
 }
 
-func CallClear() {
+func CallClear(extensionData string) {
 	// key: 78D6FD84-F167-42CE-A717-67268F5F6530
 	// handle: 44
 	// thisdn: 5205
@@ -561,7 +567,7 @@ func CallClear() {
 		APIVars.ThisDN,
 		APIVars.ConnectionID,
 		0,
-		"",
+		extensionData,
 	}
 
 	v, _ := query.Values(option)

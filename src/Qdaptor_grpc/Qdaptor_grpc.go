@@ -26,9 +26,12 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 		zap.Reflect("request", msg),
 	)
 
+	api.APIWaitGroup.Add(1)
+	api.APIWaitGroup.Wait()
+
 	response := &pb.TransactionMessage{
 		CallId:  msg.CallId,
-		Message: "hello", // maybe insert to extension
+		Message: api.APIVars.UCID,
 	}
 
 	logger.Info("Hello response is sent",
@@ -43,16 +46,14 @@ func (s *Server) RefCallTransaction(ctx context.Context, msg *pb.TransactionMess
 		zap.Reflect("request", msg),
 	)
 
-	// TODO: call RefCall API and get created UEIs
 	// call RefCall()
 	api.RefCall(msg.CallId)
 
 	// call HeartBeat
 	api.Heartbeat()
 
-	for api.IVRResultResponse == nil {
-		// wait for IVR Result Response
-	}
+	api.APIWaitGroup.Add(1)
+	api.APIWaitGroup.Wait()
 
 	logger.Info("IVR response is arrived",
 		zap.Reflect("IVR Response", api.IVRResultResponse),
@@ -63,7 +64,7 @@ func (s *Server) RefCallTransaction(ctx context.Context, msg *pb.TransactionMess
 
 	response := &pb.TransactionMessage{
 		CallId:  msg.CallId,
-		Message: IVRResult, // this will be changed to UEIs as string
+		Message: IVRResult,
 	}
 
 	logger.Info("RefCall response is sent",
@@ -78,6 +79,13 @@ func (s *Server) CallClearTransaction(ctx context.Context, msg *pb.TransactionMe
 		zap.Reflect("request", msg),
 	)
 
+	// msg.Message에 종료 타입이 넘어올 예정
+
+	// TODO: call API: isAbleToTransfer
+
+	// call CallClear API
+	api.CallClear(msg.Message)
+
 	// TODO: make callClear UEIs and response it first,
 	response := &pb.TransactionMessage{
 		CallId:  msg.CallId,
@@ -85,11 +93,8 @@ func (s *Server) CallClearTransaction(ctx context.Context, msg *pb.TransactionMe
 	}
 
 	logger.Info("CallClear response is sent",
-		zap.Reflect("response", msg),
+		zap.Reflect("response", response),
 	)
-
-	// call CallClear API
-	api.CallClear()
 
 	return response, nil
 }
