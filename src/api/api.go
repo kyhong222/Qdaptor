@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -32,7 +31,7 @@ var APIVars ApiVariables
 var ErrorCount int = 18 // 처음 실행하기 위해 에러카운트를 18로 시작
 var IVRResultResponse map[string]interface{} = nil
 
-var APIWaitGroup = sync.WaitGroup{}
+// var APIWaitGroup = sync.WaitGroup{}
 
 type OpenServerMsg struct {
 	MessageType int    `json:"messagetype"`
@@ -468,7 +467,7 @@ func Heartbeat() {
 			// get full IVR response
 			IVRResultResponse = objmap
 		}
-		APIWaitGroup.Done()
+		// APIWaitGroup.Done()
 	}
 
 	// messagetype: 3 is IVR event
@@ -483,7 +482,7 @@ func Heartbeat() {
 			// get full IVR Response
 			IVRResultResponse = objmap
 		}
-		APIWaitGroup.Done()
+		// APIWaitGroup.Done()
 	}
 
 	// setReady 비활성화, setAfterCallReady로 대체됨.

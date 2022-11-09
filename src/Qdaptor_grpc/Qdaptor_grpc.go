@@ -31,8 +31,13 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 	)
 
 	// wait for response
-	api.APIWaitGroup.Add(1)
-	api.APIWaitGroup.Wait()
+	// api.APIWaitGroup.Add(1)
+	// api.APIWaitGroup.Wait()
+
+	// wait with for block
+	for api.IVRResultResponse == nil {
+
+	}
 
 	ucid := api.IVRResultResponse["ucid"].(string)
 	IVRResult := api.IVRResultResponse["extensiondata"].(string)
@@ -63,8 +68,14 @@ func (s *Server) RefCallTransaction(ctx context.Context, msg *pb.TransactionMess
 	// call HeartBeat
 	api.Heartbeat()
 
-	api.APIWaitGroup.Add(1)
-	api.APIWaitGroup.Wait()
+	// wait for response
+	// api.APIWaitGroup.Add(1)
+	// api.APIWaitGroup.Wait()
+
+	// wait with for block
+	for api.IVRResultResponse == nil {
+
+	}
 
 	logger.Info("IVR response is arrived",
 		zap.Reflect("IVR Response", api.IVRResultResponse),
@@ -125,9 +136,13 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 	api.Heartbeat()
 
 	// wait for response
-	api.APIWaitGroup.Add(1)
-	api.APIWaitGroup.Wait()
+	// api.APIWaitGroup.Add(1)
+	// api.APIWaitGroup.Wait()
 
+	// wait with for block
+	for api.IVRResultResponse == nil {
+
+	}
 	isReady := "false"
 	if api.IVRResultResponse["readyagentcount"].(float64) != 0 {
 		isReady = "true"
@@ -142,8 +157,14 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 		api.Heartbeat()
 
 		// wait for response
-		api.APIWaitGroup.Add(1)
-		api.APIWaitGroup.Wait()
+		// api.APIWaitGroup.Add(1)
+		// api.APIWaitGroup.Wait()
+
+		// wait with for block
+		for api.IVRResultResponse == nil {
+
+		}
+
 		if api.IVRResultResponse["readyagentcount"].(float64) != 0 {
 			isReady = "true"
 		}
