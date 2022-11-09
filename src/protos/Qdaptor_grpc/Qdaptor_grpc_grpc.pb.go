@@ -25,6 +25,7 @@ type TransactionClient interface {
 	HelloTransaction(ctx context.Context, in *TransactionMessage, opts ...grpc.CallOption) (*TransactionMessage, error)
 	RefCallTransaction(ctx context.Context, in *TransactionMessage, opts ...grpc.CallOption) (*TransactionMessage, error)
 	CallClearTransaction(ctx context.Context, in *TransactionMessage, opts ...grpc.CallOption) (*TransactionMessage, error)
+	GetQueueTrafficTransaction(ctx context.Context, in *TransactionMessage, opts ...grpc.CallOption) (*TransactionMessage, error)
 }
 
 type transactionClient struct {
@@ -62,6 +63,15 @@ func (c *transactionClient) CallClearTransaction(ctx context.Context, in *Transa
 	return out, nil
 }
 
+func (c *transactionClient) GetQueueTrafficTransaction(ctx context.Context, in *TransactionMessage, opts ...grpc.CallOption) (*TransactionMessage, error) {
+	out := new(TransactionMessage)
+	err := c.cc.Invoke(ctx, "/Qdaptor_grpc.Transaction/GetQueueTrafficTransaction", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TransactionServer is the server API for Transaction service.
 // All implementations must embed UnimplementedTransactionServer
 // for forward compatibility
@@ -69,6 +79,7 @@ type TransactionServer interface {
 	HelloTransaction(context.Context, *TransactionMessage) (*TransactionMessage, error)
 	RefCallTransaction(context.Context, *TransactionMessage) (*TransactionMessage, error)
 	CallClearTransaction(context.Context, *TransactionMessage) (*TransactionMessage, error)
+	GetQueueTrafficTransaction(context.Context, *TransactionMessage) (*TransactionMessage, error)
 	mustEmbedUnimplementedTransactionServer()
 }
 
@@ -84,6 +95,9 @@ func (UnimplementedTransactionServer) RefCallTransaction(context.Context, *Trans
 }
 func (UnimplementedTransactionServer) CallClearTransaction(context.Context, *TransactionMessage) (*TransactionMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CallClearTransaction not implemented")
+}
+func (UnimplementedTransactionServer) GetQueueTrafficTransaction(context.Context, *TransactionMessage) (*TransactionMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetQueueTrafficTransaction not implemented")
 }
 func (UnimplementedTransactionServer) mustEmbedUnimplementedTransactionServer() {}
 
@@ -152,6 +166,24 @@ func _Transaction_CallClearTransaction_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Transaction_GetQueueTrafficTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransactionMessage)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TransactionServer).GetQueueTrafficTransaction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Qdaptor_grpc.Transaction/GetQueueTrafficTransaction",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TransactionServer).GetQueueTrafficTransaction(ctx, req.(*TransactionMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Transaction_ServiceDesc is the grpc.ServiceDesc for Transaction service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -170,6 +202,10 @@ var Transaction_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CallClearTransaction",
 			Handler:    _Transaction_CallClearTransaction_Handler,
+		},
+		{
+			MethodName: "GetQueueTrafficTransaction",
+			Handler:    _Transaction_GetQueueTrafficTransaction_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
