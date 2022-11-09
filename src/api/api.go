@@ -128,6 +128,16 @@ type CallClearQueryOption struct {
 	ExtensionData string `url:"extensiondata"`
 }
 
+type GetQueueTrafficQueryOption struct {
+	Key         string `url:"key"`
+	Handle      int    `url:"handle"`
+	Tenant      string `url:"tenantname"`
+	QueueDN     string `url:"queuedn"`
+	SkillID     int    `url:"skillid"`
+	PrivateData string `url:"privatedata"`
+	Mediaset    string `url:"mediaset"`
+}
+
 func OpenServer(AppName string) {
 	option := OpenServerQueryOption{
 		AppName,
@@ -451,6 +461,16 @@ func Heartbeat() {
 		zap.Reflect("response", objmap),
 	)
 
+	// messagetype: 2 is IVR response
+	if objmap["messagetype"].(float64) == 3 {
+		switch objmap["method"].(float64) {
+		case 1051: //  method: 1051 is getQueueTraffic
+			// get full IVR response
+			IVRResultResponse = objmap
+		}
+		APIWaitGroup.Done()
+	}
+
 	// messagetype: 3 is IVR event
 	if objmap["messagetype"].(float64) == 3 {
 		switch objmap["method"].(float64) {
@@ -458,6 +478,7 @@ func Heartbeat() {
 			// get connectionID & UCID
 			APIVars.ConnectionID = objmap["connectionid"].(string)
 			APIVars.UCID = objmap["ucid"].(string)
+			IVRResultResponse = objmap
 		case 2010: //  method: 2010 is party delete(means IVR is ended)
 			// get full IVR Response
 			IVRResultResponse = objmap
@@ -605,6 +626,62 @@ func CallClear(extensionData string) {
 	logger.Info("callClear",
 		zap.Reflect("response", objmap),
 	)
+}
+
+func GetQueueTraffic(QueueDN string) {
+	// key: BB1D0BF5-D949-4BAD-B972-13A2FB85C7B0
+	// handle: 14
+	// tenantname:
+	// queuedn: 8821
+	// skillid: 0
+	// privatedata:
+	// mediaset:
+
+	option := GetQueueTrafficQueryOption{
+		APIVars.Session,
+		APIVars.Handle,
+		"",
+		QueueDN,
+		0,
+		"",
+		"",
+	}
+
+	v, _ := query.Values(option)
+
+	url := APIVars.BaseURL + "/getqueuetraffic?" + v.Encode()
+
+	// GetQueueTraffic 호출
+	resp, err := http.Get(url)
+	if err != nil {
+		logger.Error("getQueueTraffic failed",
+			zap.Error(err),
+		)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body) // data는 byte[]
+	if err != nil {
+		logger.Error("getQueueTraffic response read failed",
+			zap.Error(err),
+		)
+		return
+	}
+
+	var objmap map[string]interface{}
+	if err = json.Unmarshal(data, &objmap); err != nil {
+		logger.Error("getQueueTraffic response Unmarshal failed ",
+			zap.Error(err),
+		)
+		return
+	}
+
+	logger.Info("getQueueTraffic",
+		zap.Reflect("response", objmap),
+	)
+
 }
 
 func Start(url string, HBP int, HBC int, appName string, DN string, tenant string, agentID string) {

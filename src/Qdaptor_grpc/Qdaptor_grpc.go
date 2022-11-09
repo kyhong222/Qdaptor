@@ -5,6 +5,7 @@ import (
 	"Qdaptor/logger"
 	pb "Qdaptor/protos/Qdaptor_grpc"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 
@@ -16,6 +17,9 @@ import (
 // var qdaptor_url string = "localhost"
 var port string = "52051"
 
+var QueueDN1 string = "8821"
+var QueueDN2 string = "8822"
+
 type Server struct {
 	pb.UnimplementedTransactionServer
 }
@@ -26,12 +30,19 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 		zap.Reflect("request", msg),
 	)
 
+	// wait for response
 	api.APIWaitGroup.Add(1)
 	api.APIWaitGroup.Wait()
 
+	ucid := api.IVRResultResponse["ucid"].(string)
+	IVRResult := api.IVRResultResponse["extensiondata"].(string)
+
+	extends := fusionObjectStrings(ucid, IVRResult)
+	api.IVRResultResponse = nil
+
 	response := &pb.TransactionMessage{
 		CallId:  msg.CallId,
-		Message: api.APIVars.UCID,
+		Message: extends,
 	}
 
 	logger.Info("Hello response is sent",
@@ -59,12 +70,15 @@ func (s *Server) RefCallTransaction(ctx context.Context, msg *pb.TransactionMess
 		zap.Reflect("IVR Response", api.IVRResultResponse),
 	)
 
+	ucid := api.IVRResultResponse["ucid"].(string)
 	IVRResult := api.IVRResultResponse["extensiondata"].(string)
+
+	extends := fusionObjectStrings(ucid, IVRResult)
 	api.IVRResultResponse = nil
 
 	response := &pb.TransactionMessage{
 		CallId:  msg.CallId,
-		Message: IVRResult,
+		Message: extends,
 	}
 
 	logger.Info("RefCall response is sent",
@@ -99,6 +113,55 @@ func (s *Server) CallClearTransaction(ctx context.Context, msg *pb.TransactionMe
 	return response, nil
 }
 
+func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.TransactionMessage) (*pb.TransactionMessage, error) {
+	logger.Info("GetQueueTraffic request is arrived",
+		zap.Reflect("request", msg),
+	)
+
+	// call GetQueueTraffic for QueueDN1
+	api.GetQueueTraffic(QueueDN1)
+
+	// call HeartBeat
+	api.Heartbeat()
+
+	// wait for response
+	api.APIWaitGroup.Add(1)
+	api.APIWaitGroup.Wait()
+
+	isReady := "false"
+	if api.IVRResultResponse["readyagentcount"].(float64) != 0 {
+		isReady = "true"
+	} else {
+		// set as nil
+		api.IVRResultResponse = nil
+
+		// call GetQueueTraffic for QueueDN2
+		api.GetQueueTraffic(QueueDN2)
+
+		// call HeartBeat
+		api.Heartbeat()
+
+		// wait for response
+		api.APIWaitGroup.Add(1)
+		api.APIWaitGroup.Wait()
+		if api.IVRResultResponse["readyagentcount"].(float64) != 0 {
+			isReady = "true"
+		}
+	}
+	api.IVRResultResponse = nil
+
+	response := &pb.TransactionMessage{
+		CallId:  msg.CallId,
+		Message: isReady,
+	}
+
+	logger.Info("GetQueueTraffic response is sent",
+		zap.Reflect("response", response),
+	)
+
+	return response, nil
+}
+
 func Init() {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
@@ -114,4 +177,42 @@ func Init() {
 		fmt.Print("failed to serve:")
 		panic(err)
 	}
+}
+
+func fusionObjectStrings(objstring1 string, objstring2 string) (objstring3 string) {
+	// var obj1_s = `{"ucid": "ucidValue"}`
+	// var obj2_s = `{"extendsion":{"uei1": "a", "uei2": "b"}}`
+
+	var obj1 map[string]interface{}
+	var obj2 map[string]interface{}
+
+	if err := json.Unmarshal([]byte(objstring1), &obj1); err != nil {
+		logger.Error("obj1 unmarshaling failed",
+			zap.Error(err),
+		)
+	}
+	if err := json.Unmarshal([]byte(objstring1), &obj2); err != nil {
+		logger.Error("obj1 unmarshaling failed",
+			zap.Error(err),
+		)
+	}
+
+	// fmt.Println(obj1, obj2)
+
+	obj3 := make(map[string]interface{})
+	for k, v := range obj1 {
+		if _, ok := obj1[k]; ok {
+			obj3[k] = v
+		}
+	}
+
+	for k, v := range obj2 {
+		if _, ok := obj2[k]; ok {
+			obj3[k] = v
+		}
+	}
+
+	obj3_b, _ := json.Marshal(obj3)
+	objstring3 = string(obj3_b)
+	return
 }
