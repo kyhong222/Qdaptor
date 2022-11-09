@@ -39,7 +39,9 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 
 	}
 
+	fmt.Println(api.IVRResultResponse["ucid"].(string))
 	ucid := api.IVRResultResponse["ucid"].(string)
+	fmt.Println(api.IVRResultResponse["extensiondata"].(string))
 	IVRResult := api.IVRResultResponse["extensiondata"].(string)
 
 	extends := fusionObjectStrings(ucid, IVRResult)
