@@ -41,10 +41,11 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 
 	fmt.Println(api.IVRResultResponse["ucid"].(string))
 	ucid := api.IVRResultResponse["ucid"].(string)
-	fmt.Println(api.IVRResultResponse["extensiondata"].(string))
-	IVRResult := api.IVRResultResponse["extensiondata"].(string)
+	// fmt.Println(api.IVRResultResponse["extensiondata"].(string))
+	IVRResult := api.IVRResultResponse["extensiondata"]
+	b, _ := json.Marshal(IVRResult)
 
-	extends := fusionObjectStrings(ucid, IVRResult)
+	extends := fusionObjectStrings(ucid, string(b))
 	api.IVRResultResponse = nil
 
 	response := &pb.TransactionMessage{
