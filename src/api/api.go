@@ -29,7 +29,7 @@ type ApiVariables struct {
 
 var APIVars ApiVariables
 var ErrorCount int = 18 // 처음 실행하기 위해 에러카운트를 18로 시작
-var IVRResultResponse map[string]interface{} = nil
+var IVRResultResponse map[string]interface{}
 
 // var APIWaitGroup = sync.WaitGroup{}
 

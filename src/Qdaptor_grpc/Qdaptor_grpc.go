@@ -36,17 +36,16 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 	api.Heartbeat()
 	// wait with for block
 	for api.IVRResultResponse == nil {
-
+		fmt.Println("waiting for IVR Response...")
 	}
 
-	fmt.Println(api.IVRResultResponse["ucid"].(string))
+	// fmt.Println(api.IVRResultResponse["ucid"].(string))
 	ucid := api.IVRResultResponse["ucid"].(string)
 	// fmt.Println(api.IVRResultResponse["extensiondata"].(string))
 	IVRResult := api.IVRResultResponse["extensiondata"]
 	b, _ := json.Marshal(IVRResult)
 
 	extends := fusionObjectStrings(ucid, string(b))
-	api.IVRResultResponse = nil
 
 	response := &pb.TransactionMessage{
 		CallId:  msg.CallId,
@@ -57,6 +56,7 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 		zap.Reflect("response", response),
 	)
 
+	api.IVRResultResponse = nil
 	return response, nil
 }
 
