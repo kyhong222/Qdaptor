@@ -33,7 +33,7 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 	// wait for response
 	// api.APIWaitGroup.Add(1)
 	// api.APIWaitGroup.Wait()
-
+	api.Heartbeat()
 	// wait with for block
 	for api.IVRResultResponse == nil {
 
@@ -207,19 +207,21 @@ func fusionObjectStrings(objstring1 string, objstring2 string) (objstring3 strin
 	// var obj1_s = `{"ucid": "ucidValue"}`
 	// var obj2_s = `{"extendsion":{"uei1": "a", "uei2": "b"}}`
 
-	var obj1 map[string]interface{}
-	var obj2 map[string]interface{}
+	obj1 := make(map[string]interface{})
+	obj2 := make(map[string]interface{})
+	// if err := json.Unmarshal([]byte(objstring1), &obj1); err != nil {
+	// 	logger.Error("obj1 unmarshaling failed",
+	// 		zap.Error(err),
+	// 	)
+	// }
+	// if err := json.Unmarshal([]byte(objstring1), &obj2); err != nil {
+	// 	logger.Error("obj1 unmarshaling failed",
+	// 		zap.Error(err),
+	// 	)
+	// }
 
-	if err := json.Unmarshal([]byte(objstring1), &obj1); err != nil {
-		logger.Error("obj1 unmarshaling failed",
-			zap.Error(err),
-		)
-	}
-	if err := json.Unmarshal([]byte(objstring1), &obj2); err != nil {
-		logger.Error("obj1 unmarshaling failed",
-			zap.Error(err),
-		)
-	}
+	obj1["ucid"] = objstring1
+	obj2["extensiondata"] = objstring2
 
 	// fmt.Println(obj1, obj2)
 
