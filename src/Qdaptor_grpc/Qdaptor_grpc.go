@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -33,20 +34,25 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 	// wait for response
 	// api.APIWaitGroup.Add(1)
 	// api.APIWaitGroup.Wait()
-	api.Heartbeat()
-	// wait with for block
+
+	// wait for response with for block
 	for api.IVRResultResponse == nil {
-		fmt.Println("waiting for IVR Response...")
+		time.Sleep(1 * time.Second)
+		// call HeartBeat
+		api.Heartbeat()
 	}
 
 	// fmt.Println(api.IVRResultResponse["ucid"].(string))
 	ucid := api.IVRResultResponse["ucid"].(string)
 	// fmt.Println(api.IVRResultResponse["extensiondata"].(string))
 	IVRResult := api.IVRResultResponse["extensiondata"]
+	fmt.Println("@@@marsharl start")
 	b, _ := json.Marshal(IVRResult)
 
+	fmt.Println("@@@marsharl ends")
 	extends := fusionObjectStrings(ucid, string(b))
 
+	fmt.Println("@@@fusion ends")
 	response := &pb.TransactionMessage{
 		CallId:  msg.CallId,
 		Message: extends,
@@ -68,16 +74,11 @@ func (s *Server) RefCallTransaction(ctx context.Context, msg *pb.TransactionMess
 	// call RefCall()
 	api.RefCall(msg.CallId)
 
-	// call HeartBeat
-	api.Heartbeat()
-
-	// wait for response
-	// api.APIWaitGroup.Add(1)
-	// api.APIWaitGroup.Wait()
-
-	// wait with for block
+	// wait for response with for block
 	for api.IVRResultResponse == nil {
-
+		time.Sleep(1 * time.Second)
+		// call HeartBeat
+		api.Heartbeat()
 	}
 
 	logger.Info("IVR response is arrived",
@@ -142,10 +143,13 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 	// api.APIWaitGroup.Add(1)
 	// api.APIWaitGroup.Wait()
 
-	// wait with for block
+	// wait for response with for block
 	for api.IVRResultResponse == nil {
-
+		time.Sleep(1 * time.Second)
+		// call HeartBeat
+		api.Heartbeat()
 	}
+
 	isReady := "false"
 	if api.IVRResultResponse["readyagentcount"].(float64) != 0 {
 		isReady = "true"
@@ -156,16 +160,23 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 		// call GetQueueTraffic for QueueDN2
 		api.GetQueueTraffic(QueueDN2)
 
-		// call HeartBeat
-		api.Heartbeat()
+		// wait for response with for block
+		for api.IVRResultResponse == nil {
+			time.Sleep(1 * time.Second)
+			// call HeartBeat
+			api.Heartbeat()
+		}
 
 		// wait for response
 		// api.APIWaitGroup.Add(1)
 		// api.APIWaitGroup.Wait()
 
 		// wait with for block
+		// wait for response with for block
 		for api.IVRResultResponse == nil {
-
+			time.Sleep(1 * time.Second)
+			// call HeartBeat
+			api.Heartbeat()
 		}
 
 		if api.IVRResultResponse["readyagentcount"].(float64) != 0 {
