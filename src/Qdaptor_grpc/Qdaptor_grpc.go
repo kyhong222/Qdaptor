@@ -209,6 +209,12 @@ func fusionObjectStrings(objstring1 string, objstring2 string) (objstring3 strin
 
 	obj1 := make(map[string]interface{})
 	obj2 := make(map[string]interface{})
+
+	extendData := make(map[string]interface{})
+
+	if err := json.Unmarshal([]byte(objstring2), &extendData); err != nil {
+		panic(err)
+	}
 	// if err := json.Unmarshal([]byte(objstring1), &obj1); err != nil {
 	// 	logger.Error("obj1 unmarshaling failed",
 	// 		zap.Error(err),
@@ -221,7 +227,7 @@ func fusionObjectStrings(objstring1 string, objstring2 string) (objstring3 strin
 	// }
 
 	obj1["ucid"] = objstring1
-	obj2["extensiondata"] = objstring2
+	obj2["extensiondata"] = extendData
 
 	// fmt.Println(obj1, obj2)
 

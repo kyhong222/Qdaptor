@@ -468,6 +468,7 @@ func Heartbeat() {
 			IVRResultResponse = objmap
 		}
 		// APIWaitGroup.Done()
+		Heartbeat()
 	}
 
 	// messagetype: 3 is IVR event
@@ -482,6 +483,7 @@ func Heartbeat() {
 			// get full IVR Response
 			IVRResultResponse = objmap
 		}
+		Heartbeat()
 		// APIWaitGroup.Done()
 	}
 
