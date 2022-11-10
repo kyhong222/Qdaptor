@@ -460,19 +460,15 @@ func Heartbeat() {
 		zap.Reflect("response", objmap),
 	)
 
-	// messagetype: 2 is IVR response
-	if objmap["messagetype"].(float64) == 3 {
+	// heartbeat message processing
+	switch objmap["messagetype"].(float64) {
+	case 2: // messagetype: 2 is IVR response
 		switch objmap["method"].(float64) {
 		case 1051: //  method: 1051 is getQueueTraffic
 			// get full IVR response
 			IVRResultResponse = objmap
 		}
-		// APIWaitGroup.Done()
-		Heartbeat()
-	}
-
-	// messagetype: 3 is IVR event
-	if objmap["messagetype"].(float64) == 3 {
+	case 3: // messagetype: 3 is IVR event
 		switch objmap["method"].(float64) {
 		case 2000: //  method: 2000 is ringing
 			// get connectionID & UCID
@@ -484,7 +480,7 @@ func Heartbeat() {
 			APIVars.ConnectionID = objmap["connectionid"].(string)
 			APIVars.UCID = objmap["ucid"].(string)
 			IVRResultResponse = objmap
-		case 2002: //  method: 2002 is released
+		case 2002: //  method: 2002 is ringing
 			// get connectionID & UCID
 			APIVars.ConnectionID = objmap["connectionid"].(string)
 			APIVars.UCID = objmap["ucid"].(string)
@@ -493,9 +489,43 @@ func Heartbeat() {
 			// get full IVR Response
 			IVRResultResponse = objmap
 		}
-		Heartbeat()
-		// APIWaitGroup.Done()
 	}
+
+	// // messagetype: 2 is IVR response
+	// if objmap["messagetype"].(float64) == 2 {
+	// 	switch objmap["method"].(float64) {
+	// 	case 1051: //  method: 1051 is getQueueTraffic
+	// 		// get full IVR response
+	// 		IVRResultResponse = objmap
+	// 	}
+	// 	// APIWaitGroup.Done()
+	// }
+
+	// // messagetype: 3 is IVR event
+	// if objmap["messagetype"].(float64) == 3 {
+	// 	switch objmap["method"].(float64) {
+	// 	case 2000: //  method: 2000 is ringing
+	// 		// get connectionID & UCID
+	// 		APIVars.ConnectionID = objmap["connectionid"].(string)
+	// 		APIVars.UCID = objmap["ucid"].(string)
+	// 		IVRResultResponse = objmap
+	// 	case 2001: //  method: 2001 is established
+	// 		// get connectionID & UCID
+	// 		APIVars.ConnectionID = objmap["connectionid"].(string)
+	// 		APIVars.UCID = objmap["ucid"].(string)
+	// 		IVRResultResponse = objmap
+	// 	case 2002: //  method: 2002 is ringing
+	// 		// get connectionID & UCID
+	// 		APIVars.ConnectionID = objmap["connectionid"].(string)
+	// 		APIVars.UCID = objmap["ucid"].(string)
+	// 		IVRResultResponse = objmap
+	// 	case 2010: //  method: 2010 is party delete(means IVR is ended)
+	// 		// get full IVR Response
+	// 		IVRResultResponse = objmap
+	// 	}
+	// 	Heartbeat()
+	// 	// APIWaitGroup.Done()
+	// }
 
 	// setReady 비활성화, setAfterCallReady로 대체됨.
 	// // heartbeat에서 agentState != 40이 감지될 경우
