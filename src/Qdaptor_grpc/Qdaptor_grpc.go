@@ -6,7 +6,6 @@ import (
 	pb "Qdaptor/protos/Qdaptor_grpc"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net"
 	"time"
 
@@ -46,13 +45,10 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 	ucid := api.IVRResultResponse["ucid"].(string)
 	// fmt.Println(api.IVRResultResponse["extensiondata"].(string))
 	IVRResult := api.IVRResultResponse["extensiondata"]
-	fmt.Println("@@@marsharl start")
 	b, _ := json.Marshal(IVRResult)
 
-	fmt.Println("@@@marsharl ends")
 	extends := fusionObjectStrings(ucid, string(b))
 
-	fmt.Println("@@@fusion ends")
 	response := &pb.TransactionMessage{
 		CallId:  msg.CallId,
 		Message: extends,
@@ -200,17 +196,24 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 func Init() {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
-		fmt.Print("failed to listen:")
-		panic(err)
+		// fmt.Print("failed to listen:")
+		// panic(err)
+		logger.Fatal("failed to listen",
+			zap.Error(err),
+		)
 	}
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterTransactionServer(grpcServer, &Server{})
-	fmt.Println("server listening at", lis.Addr())
+	// fmt.Println("server listening at", lis.Addr())
+	logger.Info("server listening at " + port)
 
 	if err := grpcServer.Serve(lis); err != nil {
-		fmt.Print("failed to serve:")
-		panic(err)
+		// fmt.Print("failed to serve:")
+		// panic(err)
+		logger.Fatal("failed to serve",
+			zap.Error(err),
+		)
 	}
 }
 
