@@ -11,6 +11,7 @@ service Transaction {
   rpc RefCallTransaction(TransactionMessage) returns (TransactionMessage){}
   rpc CallClearTransaction(TransactionMessage) returns (TransactionMessage){}
   rpc GetQueueTrafficTransaction(TransactionMessage) returns (TransactionMessage){}
+  rpc CloseQdaptorTransaction(TransactionMessage) returns (TransactionMessage){}
 }
 
 message TransactionMessage {
