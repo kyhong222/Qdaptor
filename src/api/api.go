@@ -480,11 +480,11 @@ func Heartbeat() {
 			APIVars.ConnectionID = objmap["connectionid"].(string)
 			APIVars.UCID = objmap["ucid"].(string)
 			IVRResultResponse = objmap
-		case 2002: //  method: 2002 is ringing
-			// get connectionID & UCID
-			APIVars.ConnectionID = objmap["connectionid"].(string)
-			APIVars.UCID = objmap["ucid"].(string)
-			IVRResultResponse = objmap
+		// case 2002: //  method: 2002 is release
+		// 	// get connectionID & UCID
+		// 	APIVars.ConnectionID = objmap["connectionid"].(string)
+		// 	APIVars.UCID = objmap["ucid"].(string)
+		// 	IVRResultResponse = objmap
 		case 2010: //  method: 2010 is party delete(means IVR is ended)
 			// get full IVR Response
 			IVRResultResponse = objmap
