@@ -31,6 +31,8 @@ var APIVars ApiVariables
 var ErrorCount int = 18 // 처음 실행하기 위해 에러카운트를 18로 시작
 var IVRResultResponse map[string]interface{}
 
+var IsApiCalled = false
+
 // var APIWaitGroup = sync.WaitGroup{}
 
 type OpenServerMsg struct {
@@ -138,6 +140,7 @@ type GetQueueTrafficQueryOption struct {
 }
 
 func OpenServer(AppName string) {
+	IsApiCalled = true
 	option := OpenServerQueryOption{
 		AppName,
 	}
@@ -189,6 +192,7 @@ func OpenServer(AppName string) {
 }
 
 func Register(DN string) {
+	IsApiCalled = true
 	tenantName := "SSG_DEV"
 	APIVars.ThisDN = DN
 	option := RegisterQueryOption{
@@ -239,6 +243,7 @@ func Register(DN string) {
 }
 
 func Login(agnetID string, DN string, tenant string) {
+	IsApiCalled = true
 
 	option := LoginQueryOption{
 		APIVars.Session,
@@ -297,6 +302,8 @@ func Login(agnetID string, DN string, tenant string) {
 }
 
 func SetReady(tenant string, agentID string) {
+	IsApiCalled = true
+
 	option := SetAgentStateQueryOption{
 		APIVars.Session,
 		APIVars.Handle,
@@ -353,6 +360,8 @@ func SetReady(tenant string, agentID string) {
 }
 
 func SetAfterCallReady(tenant string, agentID string) {
+	IsApiCalled = true
+
 	option := SetAfterCallReadyQueryOption{
 		APIVars.Session,
 		APIVars.Handle,
@@ -462,12 +471,15 @@ func Heartbeat() {
 
 	// heartbeat message processing
 	switch objmap["messagetype"].(float64) {
+	case 1:
+		go Heartbeat()
 	case 2: // messagetype: 2 is IVR response
 		switch objmap["method"].(float64) {
 		case 1051: //  method: 1051 is getQueueTraffic
 			// get full IVR response
 			IVRResultResponse = objmap
 		}
+		go Heartbeat()
 	case 3: // messagetype: 3 is IVR event
 		switch objmap["method"].(float64) {
 		case 2000: //  method: 2000 is ringing
@@ -489,6 +501,7 @@ func Heartbeat() {
 			// get full IVR Response
 			IVRResultResponse = objmap
 		}
+		go Heartbeat()
 	}
 
 	// // messagetype: 2 is IVR response
@@ -544,7 +557,11 @@ func HeartbeatMaker(period int) {
 
 	// 4
 	c.Every(period).Seconds().Do(func() {
-		Heartbeat()
+		if IsApiCalled {
+			IsApiCalled = false
+		} else {
+			Heartbeat()
+		}
 		// Heartbeat()
 	})
 
@@ -732,25 +749,13 @@ func Start(url string, HBP int, HBC int, appName string, DN string, tenant strin
 
 	OpenServer(appName)
 	time.Sleep(1 * time.Second)
-	Heartbeat()
-	time.Sleep(1 * time.Second)
 	Register(DN)
 	time.Sleep(1 * time.Second)
-	Heartbeat()
-	time.Sleep(1 * time.Second)
-	Heartbeat()
-	time.Sleep(1 * time.Second)
 	Login(agentID, DN, tenant)
-	time.Sleep(1 * time.Second)
-	Heartbeat()
-	time.Sleep(1 * time.Second)
-	Heartbeat()
 	time.Sleep(1 * time.Second)
 	SetReady(tenant, agentID)
 	time.Sleep(1 * time.Second)
 	SetAfterCallReady(tenant, agentID)
-	time.Sleep(1 * time.Second)
-	Heartbeat()
 	time.Sleep(1 * time.Second)
 	HeartbeatMaker(APIVars.HBPeriod)
 
