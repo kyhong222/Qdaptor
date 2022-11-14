@@ -424,6 +424,9 @@ func Heartbeat() {
 	v, _ := query.Values(option)
 
 	url := APIVars.BaseURL + "/heartbeat?" + v.Encode()
+	logger.Info("Heartbeat called",
+		zap.String("url", url),
+	)
 
 	// heartbeat 호출
 	resp, err := http.Get(url)
@@ -472,14 +475,14 @@ func Heartbeat() {
 	// heartbeat message processing
 	switch objmap["messagetype"].(float64) {
 	case 1:
-		go Heartbeat()
+		Heartbeat()
 	case 2: // messagetype: 2 is IVR response
 		switch objmap["method"].(float64) {
 		case 1051: //  method: 1051 is getQueueTraffic
 			// get full IVR response
 			IVRResultResponse = objmap
 		}
-		go Heartbeat()
+		Heartbeat()
 	case 3: // messagetype: 3 is IVR event
 		switch objmap["method"].(float64) {
 		case 2000: //  method: 2000 is ringing
@@ -501,7 +504,7 @@ func Heartbeat() {
 			// get full IVR Response
 			IVRResultResponse = objmap
 		}
-		go Heartbeat()
+		Heartbeat()
 	}
 
 	// // messagetype: 2 is IVR response
