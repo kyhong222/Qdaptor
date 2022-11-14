@@ -37,9 +37,9 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 	// wait for response with for block
 	for api.IVRResultResponse == nil {
 		time.Sleep(1 * time.Second)
-		logger.Info("wait for IVRResult",
-			zap.Reflect("api.Response", api.IVRResultResponse),
-		)
+		// logger.Info("wait for IVRResult",
+		// 	zap.Reflect("api.Response", api.IVRResultResponse),
+		// )
 		// // call HeartBeat
 		// api.Heartbeat()
 	}
@@ -77,7 +77,7 @@ func (s *Server) RefCallTransaction(ctx context.Context, msg *pb.TransactionMess
 	for api.IVRResultResponse == nil {
 		time.Sleep(1 * time.Second)
 		// call HeartBeat
-		api.Heartbeat()
+		// api.Heartbeat()
 	}
 
 	logger.Info("IVR response is arrived",
@@ -136,7 +136,7 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 	api.GetQueueTraffic(QueueDN1)
 
 	// call HeartBeat
-	api.Heartbeat()
+	// api.Heartbeat()
 
 	// wait for response
 	// api.APIWaitGroup.Add(1)
@@ -146,7 +146,7 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 	for api.IVRResultResponse == nil {
 		time.Sleep(1 * time.Second)
 		// call HeartBeat
-		api.Heartbeat()
+		// api.Heartbeat()
 	}
 
 	isReady := "false"
@@ -163,7 +163,7 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 		for api.IVRResultResponse == nil {
 			time.Sleep(1 * time.Second)
 			// call HeartBeat
-			api.Heartbeat()
+			// api.Heartbeat()
 		}
 
 		// wait for response
@@ -175,7 +175,7 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 		for api.IVRResultResponse == nil {
 			time.Sleep(1 * time.Second)
 			// call HeartBeat
-			api.Heartbeat()
+			// api.Heartbeat()
 		}
 
 		if api.IVRResultResponse["readyagentcount"].(float64) != 0 {
