@@ -37,8 +37,11 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 	// wait for response with for block
 	for api.IVRResultResponse == nil {
 		time.Sleep(1 * time.Second)
-		// call HeartBeat
-		api.Heartbeat()
+		logger.Info("wait for IVRResult",
+			zap.Reflect("api.Response", api.IVRResultResponse),
+		)
+		// // call HeartBeat
+		// api.Heartbeat()
 	}
 
 	// fmt.Println(api.IVRResultResponse["ucid"].(string))

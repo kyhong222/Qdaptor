@@ -475,23 +475,27 @@ func Heartbeat() {
 	// heartbeat message processing
 	switch objmap["messagetype"].(float64) {
 	case 1:
-		Heartbeat()
+		go Heartbeat()
 	case 2: // messagetype: 2 is IVR response
 		switch objmap["method"].(float64) {
 		case 1051: //  method: 1051 is getQueueTraffic
 			// get full IVR response
 			IVRResultResponse = objmap
 		}
-		Heartbeat()
+		go Heartbeat()
 	case 3: // messagetype: 3 is IVR event
 		switch objmap["method"].(float64) {
 		case 2000: //  method: 2000 is ringing
 			// get connectionID & UCID
+			logger.Info("IVRResultResponse is arrived(2000)",
+				zap.Reflect("response", objmap))
 			APIVars.ConnectionID = objmap["connectionid"].(string)
 			APIVars.UCID = objmap["ucid"].(string)
 			IVRResultResponse = objmap
 		case 2001: //  method: 2001 is established
 			// get connectionID & UCID
+			logger.Info("IVRResultResponse is arrived(2001)",
+				zap.Reflect("response", objmap))
 			APIVars.ConnectionID = objmap["connectionid"].(string)
 			APIVars.UCID = objmap["ucid"].(string)
 			IVRResultResponse = objmap
@@ -502,9 +506,11 @@ func Heartbeat() {
 		// 	IVRResultResponse = objmap
 		case 2010: //  method: 2010 is party delete(means IVR is ended)
 			// get full IVR Response
+			logger.Info("IVRResultResponse is arrived(2010)",
+				zap.Reflect("response", objmap))
 			IVRResultResponse = objmap
 		}
-		Heartbeat()
+		go Heartbeat()
 	}
 
 	// // messagetype: 2 is IVR response
@@ -563,7 +569,7 @@ func HeartbeatMaker(period int) {
 		if IsApiCalled {
 			IsApiCalled = false
 		} else {
-			Heartbeat()
+			go Heartbeat()
 		}
 		// Heartbeat()
 	})
