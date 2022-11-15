@@ -126,6 +126,8 @@ func (s *Server) CallClearTransaction(ctx context.Context, msg *pb.TransactionMe
 }
 
 func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.TransactionMessage) (*pb.TransactionMessage, error) {
+	api.IVRResultResponse = nil
+
 	logger.Info("GetQueueTraffic request is arrived",
 		zap.Reflect("request", msg),
 	)
@@ -141,7 +143,7 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 	// api.APIWaitGroup.Wait()
 
 	// wait for response with for block
-	for api.IVRResultResponse["readyagentcount"] != nil {
+	for api.IVRResultResponse == nil {
 		time.Sleep(1 * time.Second)
 		// call HeartBeat
 		// api.Heartbeat()
@@ -158,7 +160,7 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 		api.GetQueueTraffic(QueueDN2)
 
 		// wait for response with for block
-		for api.IVRResultResponse["readyagentcount"] == nil {
+		for api.IVRResultResponse == nil {
 			time.Sleep(1 * time.Second)
 			// call HeartBeat
 			// api.Heartbeat()

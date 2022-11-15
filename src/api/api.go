@@ -494,13 +494,13 @@ func Heartbeat() {
 			APIVars.ConnectionID = objmap["connectionid"].(string)
 			APIVars.UCID = objmap["ucid"].(string)
 			IVRResultResponse = objmap
-		case 2001: //  method: 2001 is established
-			// get connectionID & UCID
-			logger.Info("IVRResultResponse is arrived(2001)",
-				zap.Reflect("response", objmap))
-			APIVars.ConnectionID = objmap["connectionid"].(string)
-			APIVars.UCID = objmap["ucid"].(string)
-			IVRResultResponse = objmap
+		// case 2001: //  method: 2001 is established
+		// 	// get connectionID & UCID
+		// 	logger.Info("IVRResultResponse is arrived(2001)",
+		// 		zap.Reflect("response", objmap))
+		// 	APIVars.ConnectionID = objmap["connectionid"].(string)
+		// 	APIVars.UCID = objmap["ucid"].(string)
+		// 	IVRResultResponse = objmap
 		// case 2002: //  method: 2002 is release
 		// 	// get connectionID & UCID
 		// 	APIVars.ConnectionID = objmap["connectionid"].(string)
