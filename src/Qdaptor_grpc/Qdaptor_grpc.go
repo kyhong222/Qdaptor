@@ -141,7 +141,7 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 	// api.APIWaitGroup.Wait()
 
 	// wait for response with for block
-	for api.IVRResultResponse == nil {
+	for api.IVRResultResponse["readyagentcount"] != nil {
 		time.Sleep(1 * time.Second)
 		// call HeartBeat
 		// api.Heartbeat()
@@ -158,7 +158,7 @@ func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.Transac
 		api.GetQueueTraffic(QueueDN2)
 
 		// wait for response with for block
-		for api.IVRResultResponse == nil {
+		for api.IVRResultResponse["readyagentcount"] == nil {
 			time.Sleep(1 * time.Second)
 			// call HeartBeat
 			// api.Heartbeat()
