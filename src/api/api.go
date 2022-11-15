@@ -480,6 +480,8 @@ func Heartbeat() {
 		switch objmap["method"].(float64) {
 		case 1051: //  method: 1051 is getQueueTraffic
 			// get full IVR response
+			logger.Info("IVRResultResponse is arrived(1051)",
+				zap.Reflect("response", objmap))
 			IVRResultResponse = objmap
 		}
 		go Heartbeat()
