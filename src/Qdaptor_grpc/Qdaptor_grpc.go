@@ -107,8 +107,6 @@ func (s *Server) CallClearTransaction(ctx context.Context, msg *pb.TransactionMe
 		zap.Reflect("request", msg),
 	)
 
-	// msg.Message에 종료 타입이 넘어올 예정
-
 	// TODO: call API: isAbleToTransfer
 
 	// call CallClear API
