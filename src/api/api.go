@@ -14,11 +14,20 @@ import (
 	"github.com/google/go-querystring/query"
 )
 
+type Agent struct {
+	APIVars           ApiVariables
+	DN                string
+	Tenant            string
+	AgentID           string
+	IVRResultResponse map[string]interface{}
+
+	ErrorCount  int
+	IsApiCalled bool
+}
+
 type ApiVariables struct {
-	BaseURL string
 	Session string
 	Handle  int
-	ThisDN  string
 
 	HBPeriod int
 	HBErrCnt int
@@ -27,13 +36,11 @@ type ApiVariables struct {
 	UCID         string
 }
 
-var APIVars ApiVariables
-var ErrorCount int = 18 // 처음 실행하기 위해 에러카운트를 18로 시작
-var IVRResultResponse map[string]interface{}
-
-var IsApiCalled = false
+// var APIVars ApiVariables
+// var ErrorCount int = 18 // 처음 실행하기 위해 에러카운트를 18로 시작
 
 // var APIWaitGroup = sync.WaitGroup{}
+var BaseURL string = "https://dev-icweb.ssgadm.com:9203/ic"
 
 type OpenServerMsg struct {
 	MessageType int    `json:"messagetype"`
@@ -139,15 +146,15 @@ type GetQueueTrafficQueryOption struct {
 	Mediaset    string `url:"mediaset"`
 }
 
-func OpenServer(AppName string) {
-	IsApiCalled = true
+func (a *Agent) OpenServer(AppName string) {
+	a.IsApiCalled = true
 	option := OpenServerQueryOption{
 		AppName,
 	}
 
 	v, _ := query.Values(option)
 
-	url := APIVars.BaseURL + "/openserver?" + v.Encode()
+	url := BaseURL + "/openserver?" + v.Encode()
 
 	// openServer 호출
 	resp, err := http.Get(url)
@@ -155,7 +162,7 @@ func OpenServer(AppName string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
 		logger.Error("Session disconnected, retry openServer() to connect")
-		OpenServer(AppName)
+		a.OpenServer(AppName)
 		return
 	}
 
@@ -168,7 +175,7 @@ func OpenServer(AppName string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
 		logger.Error("Session disconnected, retry openServer() to connect")
-		OpenServer(AppName)
+		a.OpenServer(AppName)
 		return
 	}
 
@@ -177,7 +184,7 @@ func OpenServer(AppName string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry openServer() to connect")
 		logger.Error("Session disconnected, retry openServer() to connect")
-		OpenServer(AppName)
+		a.OpenServer(AppName)
 		return
 	}
 	// fmt.Println("openServer\t", string(data))
@@ -186,22 +193,22 @@ func OpenServer(AppName string) {
 	)
 
 	// session 및 handle 값 저장
-	APIVars.Session = resJson.Key
-	APIVars.Handle = resJson.Handle
+	a.APIVars.Session = resJson.Key
+	a.APIVars.Handle = resJson.Handle
 
 }
 
-func Register(DN string) {
-	IsApiCalled = true
-	tenantName := "SSG_DEV"
-	APIVars.ThisDN = DN
+func (a *Agent) Register() {
+	a.IsApiCalled = true
+	tenantName := a.Tenant
+
 	option := RegisterQueryOption{
-		APIVars.Session, APIVars.Handle, DN, tenantName,
+		a.APIVars.Session, a.APIVars.Handle, a.DN, tenantName,
 	}
 
 	v, _ := query.Values(option)
 
-	url := APIVars.BaseURL + "/register?" + v.Encode()
+	url := BaseURL + "/register?" + v.Encode()
 
 	// register 호출
 	reqBody := bytes.NewBufferString("") // body가 필요없으나, 파라미터라 선언.
@@ -210,7 +217,7 @@ func Register(DN string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
 		logger.Error("Session disconnected, retry register() to connect")
-		Register(DN)
+		a.Register()
 		return
 	}
 
@@ -223,7 +230,7 @@ func Register(DN string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
 		logger.Error("Session disconnected, retry register() to connect")
-		Register(DN)
+		a.Register()
 		return
 	}
 
@@ -232,7 +239,7 @@ func Register(DN string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry register() to connect")
 		logger.Error("Session disconnected, retry register() to connect")
-		Register(DN)
+		a.Register()
 		return
 	}
 	// fmt.Println("register>>\t", string(data))
@@ -242,15 +249,15 @@ func Register(DN string) {
 
 }
 
-func Login(agnetID string, DN string, tenant string) {
-	IsApiCalled = true
+func (a *Agent) Login() {
+	a.IsApiCalled = true
 
 	option := LoginQueryOption{
-		APIVars.Session,
-		APIVars.Handle,
-		tenant,
-		DN,
-		agnetID,
+		a.APIVars.Session,
+		a.APIVars.Handle,
+		a.Tenant,
+		a.DN,
+		a.AgentID,
 		"",
 		"40", // 40 is ready
 		"0",  // state sub is 0
@@ -260,7 +267,7 @@ func Login(agnetID string, DN string, tenant string) {
 
 	v, _ := query.Values(option)
 
-	url := APIVars.BaseURL + "/agentlogin?" + v.Encode()
+	url := BaseURL + "/agentlogin?" + v.Encode()
 
 	// login 호출
 	reqBody := bytes.NewBufferString("") // body가 필요없으나, 파라미터라 선언.
@@ -269,7 +276,7 @@ func Login(agnetID string, DN string, tenant string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
 		logger.Error("Session disconnected, retry login() to connect")
-		Login(agnetID, DN, tenant)
+		a.Login()
 		return
 	}
 
@@ -282,7 +289,7 @@ func Login(agnetID string, DN string, tenant string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
 		logger.Error("Session disconnected, retry login() to connect")
-		Login(agnetID, DN, tenant)
+		a.Login()
 		return
 	}
 
@@ -291,7 +298,7 @@ func Login(agnetID string, DN string, tenant string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry login() to connect")
 		logger.Error("Session disconnected, retry login() to connect")
-		Login(agnetID, DN, tenant)
+		a.Login()
 		return
 	}
 
@@ -301,14 +308,14 @@ func Login(agnetID string, DN string, tenant string) {
 	)
 }
 
-func SetReady(tenant string, agentID string) {
-	IsApiCalled = true
+func (a *Agent) SetReady() {
+	a.IsApiCalled = true
 
 	option := SetAgentStateQueryOption{
-		APIVars.Session,
-		APIVars.Handle,
-		tenant,
-		agentID,
+		a.APIVars.Session,
+		a.APIVars.Handle,
+		a.Tenant,
+		a.AgentID,
 		"40", // 40 is ready
 		"0",  // state sub is 0
 		"",   // mediaset is blank
@@ -316,7 +323,7 @@ func SetReady(tenant string, agentID string) {
 
 	v, _ := query.Values(option)
 
-	url := APIVars.BaseURL + "/setagentstate?" + v.Encode()
+	url := BaseURL + "/setagentstate?" + v.Encode()
 
 	// login 호출
 	reqBody := bytes.NewBufferString("") // body가 필요없으나, 파라미터라 선언.
@@ -325,7 +332,7 @@ func SetReady(tenant string, agentID string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
 		logger.Error("Session disconnected, retry setReady() to connect")
-		SetReady(tenant, agentID)
+		a.SetReady()
 		return
 	}
 
@@ -338,7 +345,7 @@ func SetReady(tenant string, agentID string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
 		logger.Error("Session disconnected, retry setReady() to connect")
-		SetReady(tenant, agentID)
+		a.SetReady()
 		return
 	}
 
@@ -347,7 +354,7 @@ func SetReady(tenant string, agentID string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry setReady() to connect")
 		logger.Error("Session disconnected, retry setReady() to connect")
-		SetReady(tenant, agentID)
+		a.SetReady()
 		return
 	}
 
@@ -359,14 +366,14 @@ func SetReady(tenant string, agentID string) {
 	// fmt.Println(url)
 }
 
-func SetAfterCallReady(tenant string, agentID string) {
-	IsApiCalled = true
+func (a *Agent) SetAfterCallReady() {
+	a.IsApiCalled = true
 
 	option := SetAfterCallReadyQueryOption{
-		APIVars.Session,
-		APIVars.Handle,
-		tenant,
-		agentID,
+		a.APIVars.Session,
+		a.APIVars.Handle,
+		a.Tenant,
+		a.AgentID,
 		"40", // 40 is ready
 		"0",  // state sub is 0
 		"",   // mediaset is blank
@@ -374,7 +381,7 @@ func SetAfterCallReady(tenant string, agentID string) {
 
 	v, _ := query.Values(option)
 
-	url := APIVars.BaseURL + "/setaftcallstate?" + v.Encode()
+	url := BaseURL + "/setaftcallstate?" + v.Encode()
 
 	// login 호출
 	reqBody := bytes.NewBufferString("") // body가 필요없으나, 파라미터라 선언.
@@ -383,7 +390,7 @@ func SetAfterCallReady(tenant string, agentID string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
 		logger.Error("Session disconnected, retry setAfterCallReady() to connect")
-		SetAfterCallReady(tenant, agentID)
+		a.SetAfterCallReady()
 		return
 	}
 
@@ -396,7 +403,7 @@ func SetAfterCallReady(tenant string, agentID string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
 		logger.Error("Session disconnected, retry setAfterCallReady() to connect")
-		SetAfterCallReady(tenant, agentID)
+		a.SetAfterCallReady()
 		return
 	}
 
@@ -405,7 +412,7 @@ func SetAfterCallReady(tenant string, agentID string) {
 		// panic(err)
 		// fmt.Println("Retry>>\tSession disconnected, retry setAfterCallReady() to connect")
 		logger.Error("Session disconnected, retry setAfterCallReady() to connect")
-		SetAfterCallReady(tenant, agentID)
+		a.SetAfterCallReady()
 		return
 	}
 
@@ -416,14 +423,14 @@ func SetAfterCallReady(tenant string, agentID string) {
 	// fmt.Println(url)
 }
 
-func Heartbeat() {
+func (a *Agent) Heartbeat() {
 	option := HeartbeatQueryOption{
-		APIVars.Session,
+		a.APIVars.Session,
 	}
 
 	v, _ := query.Values(option)
 
-	url := APIVars.BaseURL + "/heartbeat?" + v.Encode()
+	url := BaseURL + "/heartbeat?" + v.Encode()
 	logger.Info("Heartbeat called",
 		zap.String("url", url),
 	)
@@ -433,10 +440,10 @@ func Heartbeat() {
 	if err != nil {
 		// fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
 		// fmt.Println(err)
-		ErrorCount++
+		a.ErrorCount++
 		logger.Error("Session disconnected, retry heartbeat() to connect",
 			zap.Error(err),
-			zap.Int("ErrorCount", ErrorCount),
+			zap.Int("ErrorCount", a.ErrorCount),
 		)
 		return
 	}
@@ -447,10 +454,10 @@ func Heartbeat() {
 	if err != nil {
 		// fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
 		// fmt.Println(err)
-		ErrorCount++
+		a.ErrorCount++
 		logger.Error("Session disconnected, retry heartbeat() to connect",
 			zap.Error(err),
-			zap.Int("ErrorCount", ErrorCount),
+			zap.Int("ErrorCount", a.ErrorCount),
 		)
 		return
 	}
@@ -459,10 +466,10 @@ func Heartbeat() {
 	if err = json.Unmarshal(data, &objmap); err != nil {
 		// fmt.Println("Retry>>\tSession disconnected, retry heartbeat() to connect")
 		// fmt.Println(err)
-		ErrorCount++
+		a.ErrorCount++
 		logger.Error("Session disconnected, retry heartbeat() to connect",
 			zap.Error(err),
-			zap.Int("ErrorCount", ErrorCount),
+			zap.Int("ErrorCount", a.ErrorCount),
 		)
 		return
 	}
@@ -475,25 +482,25 @@ func Heartbeat() {
 	// heartbeat message processing
 	switch objmap["messagetype"].(float64) {
 	case 1:
-		go Heartbeat()
+		go a.Heartbeat()
 	case 2: // messagetype: 2 is IVR response
 		switch objmap["method"].(float64) {
 		case 1051: //  method: 1051 is getQueueTraffic
 			// get full IVR response
 			logger.Info("IVRResultResponse is arrived(1051)",
 				zap.Reflect("response", objmap))
-			IVRResultResponse = objmap
+			a.IVRResultResponse = objmap
 		}
-		go Heartbeat()
+		go a.Heartbeat()
 	case 3: // messagetype: 3 is IVR event
 		switch objmap["method"].(float64) {
 		case 2000: //  method: 2000 is ringing
 			// get connectionID & UCID
 			logger.Info("IVRResultResponse is arrived(2000)",
 				zap.Reflect("response", objmap))
-			APIVars.ConnectionID = objmap["connectionid"].(string)
-			APIVars.UCID = objmap["ucid"].(string)
-			IVRResultResponse = objmap
+			a.APIVars.ConnectionID = objmap["connectionid"].(string)
+			a.APIVars.UCID = objmap["ucid"].(string)
+			a.IVRResultResponse = objmap
 		// case 2001: //  method: 2001 is established
 		// 	// get connectionID & UCID
 		// 	logger.Info("IVRResultResponse is arrived(2001)",
@@ -510,9 +517,9 @@ func Heartbeat() {
 			// get full IVR Response
 			logger.Info("IVRResultResponse is arrived(2010)",
 				zap.Reflect("response", objmap))
-			IVRResultResponse = objmap
+			a.IVRResultResponse = objmap
 		}
-		go Heartbeat()
+		go a.Heartbeat()
 	}
 
 	// // messagetype: 2 is IVR response
@@ -562,18 +569,17 @@ func Heartbeat() {
 	// }
 }
 
-func HeartbeatMaker(period int) {
+func (a *Agent) HeartbeatMaker() {
 
 	c := gocron.NewScheduler(time.UTC)
 
 	// 4
-	c.Every(period).Seconds().Do(func() {
-		if IsApiCalled {
-			IsApiCalled = false
+	c.Every(a.APIVars.HBPeriod).Seconds().Do(func() {
+		if a.IsApiCalled {
+			a.IsApiCalled = false
 		} else {
-			go Heartbeat()
+			go a.Heartbeat()
 		}
-		// Heartbeat()
 	})
 
 	// 5
@@ -581,7 +587,7 @@ func HeartbeatMaker(period int) {
 
 }
 
-func RefCall(DN string) {
+func (a *Agent) RefCall(destDN string) {
 	// key: EC8ACECF-5F92-4BEB-B93F-32896C2F0450
 	// handle: 974
 	// thisdn: 5205
@@ -593,12 +599,12 @@ func RefCall(DN string) {
 	// extensiondata: {"NANSAGTID":["2022002106"]}
 
 	option := RefCallQueryOption{
-		APIVars.Session,
-		APIVars.Handle,
-		APIVars.ThisDN,
-		DN,
+		a.APIVars.Session,
+		a.APIVars.Handle,
+		a.DN,
+		destDN,
 		"",
-		APIVars.ConnectionID,
+		a.APIVars.ConnectionID,
 		4, // 4 is Mute
 		0,
 		"", // 브리지텍 측에서 NANSAGTID 필요없다 하심.
@@ -606,7 +612,7 @@ func RefCall(DN string) {
 
 	v, _ := query.Values(option)
 
-	url := APIVars.BaseURL + "/singlesteptransfer?" + v.Encode()
+	url := BaseURL + "/singlesteptransfer?" + v.Encode()
 
 	// singlesteptransfer 호출
 	resp, err := http.Get(url)
@@ -641,7 +647,7 @@ func RefCall(DN string) {
 	)
 }
 
-func CallClear(extensionData string) {
+func (a *Agent) CallClear(extensionData string) {
 	// key: 78D6FD84-F167-42CE-A717-67268F5F6530
 	// handle: 44
 	// thisdn: 5205
@@ -652,17 +658,17 @@ func CallClear(extensionData string) {
 	// TODO: make extensionData
 
 	option := CallClearQueryOption{
-		APIVars.Session,
-		APIVars.Handle,
-		APIVars.ThisDN,
-		APIVars.ConnectionID,
+		a.APIVars.Session,
+		a.APIVars.Handle,
+		a.DN,
+		a.APIVars.ConnectionID,
 		0,
 		extensionData,
 	}
 
 	v, _ := query.Values(option)
 
-	url := APIVars.BaseURL + "/clearcall?" + v.Encode()
+	url := BaseURL + "/clearcall?" + v.Encode()
 
 	// callClear 호출
 	resp, err := http.Get(url)
@@ -697,7 +703,8 @@ func CallClear(extensionData string) {
 	)
 }
 
-func GetQueueTraffic(QueueDN string) {
+// deprecated on 221116
+func (a *Agent) GetQueueTraffic(QueueDN string) {
 	// key: BB1D0BF5-D949-4BAD-B972-13A2FB85C7B0
 	// handle: 14
 	// tenantname:
@@ -707,8 +714,8 @@ func GetQueueTraffic(QueueDN string) {
 	// mediaset:
 
 	option := GetQueueTrafficQueryOption{
-		APIVars.Session,
-		APIVars.Handle,
+		a.APIVars.Session,
+		a.APIVars.Handle,
 		"",
 		QueueDN,
 		0,
@@ -718,7 +725,7 @@ func GetQueueTraffic(QueueDN string) {
 
 	v, _ := query.Values(option)
 
-	url := APIVars.BaseURL + "/getqueuetraffic?" + v.Encode()
+	url := BaseURL + "/getqueuetraffic?" + v.Encode()
 
 	// GetQueueTraffic 호출
 	resp, err := http.Get(url)
@@ -753,25 +760,34 @@ func GetQueueTraffic(QueueDN string) {
 
 }
 
-func Start(url string, HBP int, HBC int, appName string, DN string, tenant string, agentID string) {
-	APIVars.BaseURL = url
-	APIVars.HBPeriod = HBP
-	APIVars.HBErrCnt = HBC
+func (a *Agent) Start() {
+	a.ErrorCount = a.APIVars.HBErrCnt
+	for {
+		if a.ErrorCount >= a.APIVars.HBErrCnt {
+			a.ErrorCount = 0
+			a.Run()
+		}
+	}
+}
 
-	OpenServer(appName)
-	time.Sleep(1 * time.Second)
-	Register(DN)
-	time.Sleep(1 * time.Second)
-	Login(agentID, DN, tenant)
-	time.Sleep(1 * time.Second)
-	SetReady(tenant, agentID)
-	time.Sleep(1 * time.Second)
-	SetAfterCallReady(tenant, agentID)
-	time.Sleep(1 * time.Second)
-	HeartbeatMaker(APIVars.HBPeriod)
+func (a *Agent) Run() {
+	appName := "SSG_VoiceBot_" + a.DN + "_" + a.AgentID
 
-	for ErrorCount >= APIVars.HBErrCnt {
+	a.OpenServer(appName)
+	time.Sleep(1 * time.Second)
+	a.Register()
+	time.Sleep(1 * time.Second)
+	a.Login()
+	time.Sleep(1 * time.Second)
+	a.SetReady()
+	time.Sleep(1 * time.Second)
+	a.SetAfterCallReady()
+	time.Sleep(1 * time.Second)
+	a.HeartbeatMaker()
+
+	for a.ErrorCount >= a.APIVars.HBErrCnt {
 		// 에러카운트가 HBErrCnt을 넘으면, 종료
+		time.Sleep(10 * time.Second)
 		return
 	}
 }

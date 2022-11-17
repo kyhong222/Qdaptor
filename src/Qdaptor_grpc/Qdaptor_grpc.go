@@ -20,6 +20,8 @@ var port string = "52051"
 var QueueDN1 string = "8821"
 var QueueDN2 string = "8822"
 
+var AgentMap map[string](*api.Agent) = make(map[string](*api.Agent))
+
 type Server struct {
 	pb.UnimplementedTransactionServer
 }
@@ -30,24 +32,17 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 		zap.Reflect("request", msg),
 	)
 
-	// wait for response
-	// api.APIWaitGroup.Add(1)
-	// api.APIWaitGroup.Wait()
+	targetAgent := AgentMap[msg.CallId]
 
 	// wait for response with for block
-	for api.IVRResultResponse == nil {
+	for targetAgent.IVRResultResponse == nil {
 		time.Sleep(1 * time.Second)
-		// logger.Info("wait for IVRResult",
-		// 	zap.Reflect("api.Response", api.IVRResultResponse),
-		// )
-		// // call HeartBeat
-		// api.Heartbeat()
 	}
 
 	// fmt.Println(api.IVRResultResponse["ucid"].(string))
-	ucid := api.IVRResultResponse["ucid"].(string)
+	ucid := targetAgent.IVRResultResponse["ucid"].(string)
 	// fmt.Println(api.IVRResultResponse["extensiondata"].(string))
-	IVRResult := api.IVRResultResponse["extensiondata"]
+	IVRResult := targetAgent.IVRResultResponse["extensiondata"]
 	b, _ := json.Marshal(IVRResult)
 
 	extends := fusionObjectStrings(ucid, string(b))
@@ -61,7 +56,7 @@ func (s *Server) HelloTransaction(ctx context.Context, msg *pb.TransactionMessag
 		zap.Reflect("response", response),
 	)
 
-	api.IVRResultResponse = nil
+	targetAgent.IVRResultResponse = nil
 	return response, nil
 }
 
@@ -70,25 +65,27 @@ func (s *Server) RefCallTransaction(ctx context.Context, msg *pb.TransactionMess
 		zap.Reflect("request", msg),
 	)
 
+	targetAgent := AgentMap[msg.CallId]
+
 	// call RefCall()
-	api.RefCall(msg.CallId)
+	targetAgent.RefCall(msg.CallId)
 
 	// wait for response with for block
-	for api.IVRResultResponse == nil {
+	for targetAgent.IVRResultResponse == nil {
 		time.Sleep(1 * time.Second)
 		// call HeartBeat
 		// api.Heartbeat()
 	}
 
 	logger.Info("IVR response is arrived",
-		zap.Reflect("IVR Response", api.IVRResultResponse),
+		zap.Reflect("IVR Response", targetAgent.IVRResultResponse),
 	)
 
-	ucid := api.IVRResultResponse["ucid"].(string)
-	IVRResult := api.IVRResultResponse["extensiondata"].(string)
+	ucid := targetAgent.IVRResultResponse["ucid"].(string)
+	IVRResult := targetAgent.IVRResultResponse["extensiondata"].(string)
 
 	extends := fusionObjectStrings(ucid, IVRResult)
-	api.IVRResultResponse = nil
+	targetAgent.IVRResultResponse = nil
 
 	response := &pb.TransactionMessage{
 		CallId:  msg.CallId,
@@ -106,11 +103,10 @@ func (s *Server) CallClearTransaction(ctx context.Context, msg *pb.TransactionMe
 	logger.Info("CallClear request is arrived",
 		zap.Reflect("request", msg),
 	)
-
-	// TODO: call API: isAbleToTransfer
+	targetAgent := AgentMap[msg.CallId]
 
 	// call CallClear API
-	api.CallClear(msg.Message)
+	targetAgent.CallClear(msg.Message)
 
 	// TODO: make callClear UEIs and response it first,
 	response := &pb.TransactionMessage{
@@ -126,63 +122,47 @@ func (s *Server) CallClearTransaction(ctx context.Context, msg *pb.TransactionMe
 }
 
 func (s *Server) GetQueueTrafficTransaction(ctx context.Context, msg *pb.TransactionMessage) (*pb.TransactionMessage, error) {
-	api.IVRResultResponse = nil
-
 	logger.Info("GetQueueTraffic request is arrived",
 		zap.Reflect("request", msg),
 	)
 
+	targetAgent := AgentMap[msg.CallId]
+
 	// call GetQueueTraffic for QueueDN1
-	api.GetQueueTraffic(QueueDN1)
-
-	// call HeartBeat
-	// api.Heartbeat()
-
-	// wait for response
-	// api.APIWaitGroup.Add(1)
-	// api.APIWaitGroup.Wait()
+	targetAgent.GetQueueTraffic(QueueDN1)
 
 	// wait for response with for block
-	for api.IVRResultResponse == nil {
+	for targetAgent.IVRResultResponse == nil {
 		time.Sleep(1 * time.Second)
 		// call HeartBeat
 		// api.Heartbeat()
 	}
 
 	isReady := "false"
-	if api.IVRResultResponse["readyagentcount"].(float64) != 0 {
+	if targetAgent.IVRResultResponse["readyagentcount"].(float64) != 0 {
 		isReady = "true"
 	} else {
 		// set as nil
-		api.IVRResultResponse = nil
+		targetAgent.IVRResultResponse = nil
 
 		// call GetQueueTraffic for QueueDN2
-		api.GetQueueTraffic(QueueDN2)
+		targetAgent.GetQueueTraffic(QueueDN2)
 
 		// wait for response with for block
-		for api.IVRResultResponse == nil {
+		for targetAgent.IVRResultResponse == nil {
 			time.Sleep(1 * time.Second)
-			// call HeartBeat
-			// api.Heartbeat()
 		}
 
-		// wait for response
-		// api.APIWaitGroup.Add(1)
-		// api.APIWaitGroup.Wait()
-
-		// wait with for block
 		// wait for response with for block
-		for api.IVRResultResponse == nil {
+		for targetAgent.IVRResultResponse == nil {
 			time.Sleep(1 * time.Second)
-			// call HeartBeat
-			// api.Heartbeat()
 		}
 
-		if api.IVRResultResponse["readyagentcount"].(float64) != 0 {
+		if targetAgent.IVRResultResponse["readyagentcount"].(float64) != 0 {
 			isReady = "true"
 		}
 	}
-	api.IVRResultResponse = nil
+	targetAgent.IVRResultResponse = nil
 
 	response := &pb.TransactionMessage{
 		CallId:  msg.CallId,
