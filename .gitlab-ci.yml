@@ -1,0 +1,71 @@
+image: golang:1.19.2
+
+variables:
+  CONTAINER_IMAGE: localhost/soe/qdaptor
+
+stages:
+  # - test
+  # - build
+  - release
+  - deploy
+
+# test:
+#   stage: test
+#   script:
+#     - echo "$CONTAINER_IMAGE"
+
+# build:
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "master"'
+#     - if: '$CI_COMMIT_BRANCH == "release"'
+#     - if: '$CI_COMMIT_BRANCH == "develop"'
+#   stage: build
+#   image: docker:17
+#   services:
+#     - docker:dind
+#   script:
+#     - docker build -t $CONTAINER_IMAGE:$CI_PIPELINE_ID .
+
+release:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "release"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+  stage: release
+  image: docker:17
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u service -p tjqltmxla localhost
+    # Git image tag
+    - IMAGE_TAG_POSTFIX=`if [ $CI_COMMIT_BRANCH == develop ]; then echo _dev; elif [ $CI_COMMIT_BRANCH == release ]; then echo _rel; fi`
+  script:
+    - docker build -t $CONTAINER_IMAGE:$CI_PIPELINE_ID$IMAGE_TAG_POSTFIX  .
+  after_script:
+    # - docker push $CONTAINER_IMAGE:$CI_COMMIT_REF_NAME
+    - IMAGE_TAG_POSTFIX=`if [ $CI_COMMIT_BRANCH == develop ]; then echo _dev; elif [ $CI_COMMIT_BRANCH == release ]; then echo _rel; fi`
+    - docker push $CONTAINER_IMAGE:$CI_PIPELINE_ID$IMAGE_TAG_POSTFIX
+
+deploy:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "release"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+  stage: deploy
+  image: docker:17
+  before_script:
+    # install ssh
+    # - apk update
+    # - apk add openssh
+    # docker setting
+    - docker login -u service -p tjqltmxla localhost
+    # - mkdir -p /root/.ssh
+    # - echo "$SSH_PRIVATE_KEY" > /root/.ssh/id_rsa
+    # - ssh-keyscan -H 192.168.200.20 > /root/.ssh/known_hosts
+    # - chmod 600 /root/.ssh/id_rsa
+    # docker image tag
+    - IMAGE_TAG_LATEST=`if [ $CI_COMMIT_BRANCH == master ]; then echo latest; else echo $CI_COMMIT_BRANCH; fi`
+    - IMAGE_TAG_POSTFIX=`if [ $CI_COMMIT_BRANCH == develop ]; then echo _dev; elif [ $CI_COMMIT_BRANCH == release ]; then echo _rel; fi`
+  script:
+    - docker tag $CONTAINER_IMAGE:$CI_PIPELINE_ID$IMAGE_TAG_POSTFIX $CONTAINER_IMAGE:$IMAGE_TAG_LATEST
+    - docker push $CONTAINER_IMAGE:$IMAGE_TAG_LATEST
